@@ -7,4 +7,4 @@ are done is, and will remain, version control. See `git log path/to/file` for de
 
 | Directory | Description                                                                                             |
 |:----------|:--------------------------------------------------------------------------------------------------------|
-| link      | The entrypoint for the application that handles the actual redirect (i.e. s3k.link)                     |
+| cmd       | The command line interface files                                                                        |
