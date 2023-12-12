@@ -13,6 +13,6 @@ Let's call it "skink link". [Skinks] are a kind of lizard that used to hang arou
 
 [Skinks]: https://en.wikipedia.org/wiki/Skink
 
-## Architecture
+## Development
 
-There isn't one. I need to uh, write it first.
+See [the development documentation](DEVELOPMENT.md)
