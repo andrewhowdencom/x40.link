@@ -3,8 +3,15 @@ Copyright © 2023 Andrew Howden <hello@andrewhowden.com>
 */
 package main
 
-import "github.com/andrewhowdencom/s3k.link/cmd"
+import (
+	"os"
+
+	"github.com/andrewhowdencom/s3k.link/cmd"
+)
 
 func main() {
-	cmd.Execute()
+	// Cobra will print the exit.String() as part of its Execute method. Here, we only need to check
+	// what the exit code should be.
+	exit := cmd.Execute(cmd.Root)
+	os.Exit(exit.Code)
 }

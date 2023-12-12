@@ -4,13 +4,14 @@ Copyright © 2023 Andrew Howden <hello@andrewhowden.com>
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"os"
 
+	"github.com/andrewhowdencom/sysexits"
 	"github.com/spf13/cobra"
 )
 
-var rootCmd = &cobra.Command{
+var Root = &cobra.Command{
 	Use:   "s3k.link",
 	Short: "Links for Skinks",
 	Long: `A short link service. Redirects users to longer links based on an
@@ -24,13 +25,24 @@ code!`,
 	},
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		os.Exit(1)
+// Execute runs a (root) command, and returns an enriched "error" which describes the exit status of the application.
+// Essentially, a utility that allows this to be validated with tests.
+func Execute(c *cobra.Command) sysexits.Sysexit {
+	err := c.Execute()
+
+	// Success
+	if err == nil {
+		return sysexits.OK
 	}
+
+	// Check if the program hass passed an error back, enriched with context that allows deciding how to exit.
+	var exit sysexits.Sysexit
+	if errors.As(err, &exit) {
+		return exit
+	}
+
+	// The default (software error)
+	return sysexits.Software
 }
 
 // init func to declare configuration
