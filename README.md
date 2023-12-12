@@ -35,6 +35,6 @@ Let's call it "skink link". [Skinks] are a kind of lizard that used to hang arou
 
 [Skinks]: https://en.wikipedia.org/wiki/Skink
 
-## Development
+## Development & Deployment
 
-See [the development documentation](DEVELOPMENT.md)
+See [the development documentation](DEVELOPMENT.md) or the [deployment documentation](DEPLOYMENT.md)
