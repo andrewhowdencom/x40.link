@@ -8,3 +8,4 @@ are done is, and will remain, version control. See `git log path/to/file` for de
 | Directory | Description                                                                                             |
 |:----------|:--------------------------------------------------------------------------------------------------------|
 | cmd       | The command line interface files                                                                        |
+| storage   | The (pluggable) storage interface for where to lookup URLs                                              |
