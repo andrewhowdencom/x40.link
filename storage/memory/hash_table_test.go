@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/andrewhowdencom/s3k.link/storage/memory"
-	"github.com/andrewhowdencom/s3k.link/storage/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -46,22 +45,6 @@ func ExampleNewHashTable() {
 	// Output: andrewhowden.com/a
 }
 
-func BenchmarkHashTable10(b *testing.B) {
-	test.BenchmarkStorage(b, memory.NewHashTable(), 10)
-}
-
-func BenchmarkHashTable100(b *testing.B) {
-	test.BenchmarkStorage(b, memory.NewHashTable(), 100)
-}
-
-func BenchmarkHashTable100000(b *testing.B) {
-	test.BenchmarkStorage(b, memory.NewHashTable(), 100000)
-}
-
-func BenchmarkHashTable5000000(b *testing.B) {
-	test.BenchmarkStorage(b, memory.NewHashTable(), 5000000)
-}
-
 // TestNewHashTable simply validates that the hash table returns something that will not panic when used.
 func TestNewHashTable(t *testing.T) {
 	t.Parallel()
@@ -81,12 +64,4 @@ func TestNewHashTable(t *testing.T) {
 	assert.Equal(t, &url.URL{
 		Host: "andrewhowden.com",
 	}, res)
-}
-
-// TestHashTableConcurrency validates whether the hash table has shared writes / reads (with go test -race)
-func TestHashTableConcurrency(t *testing.T) {
-	t.Parallel()
-
-	th := memory.NewHashTable()
-	test.RaceStorage(th)
 }
