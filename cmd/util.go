@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/andrewhowdencom/sysexits"
 	"github.com/spf13/cobra"
@@ -26,9 +25,4 @@ func Execute(c *cobra.Command) sysexits.Sysexit {
 
 	// The default (software error)
 	return sysexits.Software
-}
-
-// The noop function simply indicates that this command, in and of itself, does nothing.
-func Noop(c *cobra.Command, args []string) error {
-	return fmt.Errorf("%w: required subcommand not supplied", sysexits.Usage)
 }

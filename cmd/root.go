@@ -16,7 +16,6 @@ input code.
 A secondary purpose of this application is to demonstrate that I (Andrew Howden)
 can indeed write code. If prospective employers come looking, here's some
 code!`,
-	RunE: Noop,
 }
 
 func init() {

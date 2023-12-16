@@ -12,7 +12,6 @@ import (
 var redirectCmd = &cobra.Command{
 	Use:   "redirect",
 	Short: "Subcommands associated with the redirect server",
-	RunE:  Noop,
 }
 
 func init() {
