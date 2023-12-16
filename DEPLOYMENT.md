@@ -18,6 +18,19 @@ The application can be deployed locally as a compute-local forwarder, similar to
     mv s3k.link /usr/local/bin/
     ```
 
+3. Write some URLs to a place that the application can read
+
+    ```bash
+    mkdir -p /etc/s3k.link
+    cat <<'EOF'>> /etc/s3k.link/urls.yaml
+    ---
+    - from: //s3k/foo
+      to: //k3s/bar
+    - from: //s3k/bar
+      to: //k3s/baz
+    EOF
+    ```
+
 3. Enable the binary to bind ports lower than 1024 without needing root privileges (Linux Only)
 
     ```bash
@@ -33,7 +46,7 @@ The application can be deployed locally as a compute-local forwarder, similar to
     After=network-online.target
 
     [Service]
-    ExecStart=/usr/local/bin/s3k.link redirect serve
+    ExecStart=/usr/local/bin/s3k.link redirect serve --with-yaml /etc/s3k.link/urls.yaml
 
     [Install]
     WantedBy=multi-user.target
