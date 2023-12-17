@@ -16,12 +16,6 @@ type LinearSearch struct {
 	mu sync.RWMutex
 }
 
-// tu or "tuple"
-type tu struct {
-	from *url.URL
-	to   *url.URL
-}
-
 func NewLinearSearch() *LinearSearch {
 	return &LinearSearch{
 		idx: make([]tu, 0),

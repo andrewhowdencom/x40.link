@@ -20,6 +20,7 @@ const seed = 42
 var sinkFactories = map[string]func() storage.Storer{
 	"hash table":    func() storage.Storer { return memory.NewHashTable() },
 	"linear search": func() storage.Storer { return memory.NewLinearSearch() },
+	"binary search": func() storage.Storer { return memory.NewBinarySearch() },
 }
 
 // benchmark is a generic approach to benchmarking the various different storage implementations at different underlying data
@@ -90,6 +91,7 @@ func BenchmarkAll(b *testing.B) {
 	benchmarkLengths := map[string][]int{
 		"hash table":    {10, 100, 1000, 100000},
 		"linear search": {10, 100, 1000},
+		"binary search": {10, 100, 1000},
 	}
 
 	for n, f := range sinkFactories {
@@ -126,11 +128,12 @@ func TestComplianceAll(t *testing.T) {
 
 			str := f()
 
-			str.Put(&url.URL{
-				Host: "s3k",
-			}, &url.URL{
-				Host: "andrewhowden.com",
-			})
+			// Query for a record that doesn't exit, to ensure the data store will not panic.
+			_, err := str.Get(&url.URL{Host: "s3k"})
+			assert.ErrorIs(t, err, storage.ErrNotFound)
+
+			// Insert and query a record.
+			str.Put(&url.URL{Host: "s3k"}, &url.URL{Host: "andrewhowden.com"})
 
 			res, err := str.Get(&url.URL{
 				Host: "s3k",
