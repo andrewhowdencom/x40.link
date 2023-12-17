@@ -4,10 +4,13 @@ import (
 	"encoding/base64"
 	"math/rand"
 	"net/url"
+	"os"
+	"path"
 	"strconv"
 	"testing"
 
 	"github.com/andrewhowdencom/s3k.link/storage"
+	"github.com/andrewhowdencom/s3k.link/storage/boltdb"
 	"github.com/andrewhowdencom/s3k.link/storage/memory"
 	"github.com/stretchr/testify/assert"
 )
@@ -16,11 +19,27 @@ import (
 // over multiple runs.
 const seed = 42
 
-// The lengths to benchmark the application on
-var sinkFactories = map[string]func() storage.Storer{
-	"hash table":    func() storage.Storer { return memory.NewHashTable() },
-	"linear search": func() storage.Storer { return memory.NewLinearSearch() },
-	"binary search": func() storage.Storer { return memory.NewBinarySearch() },
+// Factories to generate valid storage engines
+var sinkFactories = map[string]func(string) storage.Storer{
+	"hash table":    func(string) storage.Storer { return memory.NewHashTable() },
+	"linear search": func(string) storage.Storer { return memory.NewLinearSearch() },
+	"binary search": func(string) storage.Storer { return memory.NewBinarySearch() },
+	"boltdb": func(n string) storage.Storer {
+		db, err := boltdb.New(path.Join(os.TempDir(), "test+"+n+"+url-shortner.db"))
+		if err != nil {
+			panic(err)
+		}
+
+		return db
+	},
+}
+
+// Factories to tear down valid storage engines
+var teardownFunc = map[string]func(string){
+	"hash table":    func(string) {},
+	"linear search": func(string) {},
+	"binary search": func(string) {},
+	"boltdb":        func(n string) { os.Remove(path.Join(os.TempDir(), "test+"+n+"+url-shortner.db")) },
 }
 
 // benchmark is a generic approach to benchmarking the various different storage implementations at different underlying data
@@ -65,7 +84,6 @@ func benchmark(b *testing.B, str storage.Storer, iter int) {
 // race is designed to stress the storage by using it concurrently, such that the go race detector can
 // figure out if variables are being shared across the stack.
 func race(str storage.Storer) {
-
 	for i := 0; i < 1000; i++ {
 		go func() {
 			// If the number is divisible by 4 (which it should be, 25% of the time) then make it a write operation.
@@ -92,15 +110,21 @@ func BenchmarkAll(b *testing.B) {
 		"hash table":    {10, 100, 1000, 100000},
 		"linear search": {10, 100, 1000},
 		"binary search": {10, 100, 1000},
+		"boltdb":        {10, 100, 1000},
 	}
 
 	for n, f := range sinkFactories {
 		f := f
+		n := n
+
 		for _, l := range benchmarkLengths[n] {
 			l := l
 
 			b.Run(n+"+"+strconv.Itoa(int(l)), func(b *testing.B) {
-				benchmark(b, f(), l)
+				name := "benchmark+" + strconv.Itoa(int(l))
+				defer teardownFunc[n](name)
+
+				benchmark(b, f(name), l)
 			})
 		}
 	}
@@ -109,11 +133,13 @@ func BenchmarkAll(b *testing.B) {
 // TestRaceAll tests the concurrency of all implementations (with the go test -race flag on)
 func TestRaceAll(t *testing.T) {
 	for n, f := range sinkFactories {
+		n := n
 		f := f
 		t.Run(n, func(t *testing.T) {
 			t.Parallel()
 
-			race(f())
+			defer teardownFunc[n]("race")
+			race(f("race"))
 		})
 	}
 }
@@ -122,11 +148,13 @@ func TestRaceAll(t *testing.T) {
 func TestComplianceAll(t *testing.T) {
 	for n, f := range sinkFactories {
 		f := f
+		n := n
 
 		t.Run(n, func(t *testing.T) {
 			t.Parallel()
 
-			str := f()
+			str := f("compliance")
+			defer teardownFunc[n]("compliance")
 
 			// Query for a record that doesn't exit, to ensure the data store will not panic.
 			_, err := str.Get(&url.URL{Host: "s3k"})
@@ -143,7 +171,6 @@ func TestComplianceAll(t *testing.T) {
 			assert.Equal(t, &url.URL{
 				Host: "andrewhowden.com",
 			}, res)
-
 		})
 	}
 }
