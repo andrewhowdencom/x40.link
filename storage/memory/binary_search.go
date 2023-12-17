@@ -28,9 +28,6 @@ func NewBinarySearch() *BinarySearch {
 // where to update it. It works by defining boundary conditions in which to search (an upper and a lower), and
 // as binary search progresses, reducing the bounds by half — thereby cutting the result set in half.
 func (bs *BinarySearch) find(in *url.URL) (found bool, nearest int) {
-	bs.mu.RLock()
-	defer bs.mu.RUnlock()
-
 	// If there's nothing setup just yet, there can be nothing in the set. Return.
 	if len(bs.idx) == 0 {
 		return false, 0
@@ -68,6 +65,9 @@ func (bs *BinarySearch) find(in *url.URL) (found bool, nearest int) {
 
 // Fetch the record.
 func (bs *BinarySearch) Get(in *url.URL) (*url.URL, error) {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+
 	found, pos := bs.find(in)
 	if found {
 		return bs.idx[pos].to, nil
@@ -79,6 +79,9 @@ func (bs *BinarySearch) Get(in *url.URL) (*url.URL, error) {
 // Write the record into the set. Takes responsibility for determining the position in which to add the
 // new value, so that the underlying set retains order.
 func (bs *BinarySearch) Put(f *url.URL, t *url.URL) error {
+	bs.mu.Lock()
+	defer bs.mu.Unlock()
+
 	// Special case: If the array is empty, just start it.
 	if len(bs.idx) == 0 {
 		bs.idx = append(bs.idx, tu{from: f, to: t})
@@ -86,9 +89,6 @@ func (bs *BinarySearch) Put(f *url.URL, t *url.URL) error {
 	}
 
 	found, pos := bs.find(f)
-
-	bs.mu.Lock()
-	defer bs.mu.Unlock()
 
 	// If the record is already there, update it.
 	if found {
