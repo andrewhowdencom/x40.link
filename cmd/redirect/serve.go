@@ -12,6 +12,7 @@ import (
 
 	"github.com/andrewhowdencom/s3k.link/configuration"
 	"github.com/andrewhowdencom/s3k.link/storage"
+	"github.com/andrewhowdencom/s3k.link/storage/boltdb"
 	"github.com/andrewhowdencom/s3k.link/storage/memory"
 	"github.com/andrewhowdencom/s3k.link/storage/yaml"
 	"github.com/andrewhowdencom/sysexits"
@@ -23,6 +24,7 @@ import (
 const (
 	flagStrHashMap = "with-hash-map"
 	flagStrYAML    = "with-yaml"
+	flagStrBoltDB  = "with-boltdb"
 )
 
 // Sentinal errors
@@ -55,13 +57,15 @@ func init() {
 	serveFlagSet.Lookup(flagStrHashMap).NoOptDefVal = "true"
 	viper.BindPFlag(configuration.StorageHashMap, serveFlagSet.Lookup(flagStrHashMap))
 
+	serveFlagSet.StringP(flagStrBoltDB, "b", "/usr/local/share/s3k/urls.db", "The place to store the URL Database")
+	viper.BindPFlag(configuration.StoreBoltDBFile, serveFlagSet.Lookup(flagStrBoltDB))
+
 	// Bind the flag set to the command, and ensure it validated.
 	Serve.Flags().AddFlagSet(serveFlagSet)
 	Serve.MarkFlagsOneRequired(strFlags...)
 	Serve.MarkFlagsMutuallyExclusive(strFlags...)
 }
 
-// TODO: Create a validation function that ensures the appropraite flags exists, given the selected storage.
 func RunServe(cmd *cobra.Command, args []string) error {
 	str, err := getStorage(cmd.Flags())
 	if err != nil {
@@ -125,6 +129,13 @@ func getStorage(flags *pflag.FlagSet) (storage.Storer, error) {
 			}
 
 			return y, nil
+		case flagStrBoltDB:
+			db, err := boltdb.New(viper.GetString(configuration.StoreBoltDBFile))
+			if err != nil {
+				return nil, fmt.Errorf("%w: %s", ErrFailedStorageSetup, err)
+			}
+
+			return db, nil
 		default:
 			return nil, ErrUnsupportedStorage
 		}
