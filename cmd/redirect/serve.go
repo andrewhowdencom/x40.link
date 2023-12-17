@@ -4,13 +4,11 @@ package redirect
 import (
 	"errors"
 	"fmt"
-	"log"
-	"net/http"
-	"net/url"
 	"os"
 
 	"github.com/andrewhowdencom/sysexits"
 	"github.com/andrewhowdencom/x40.link/configuration"
+	"github.com/andrewhowdencom/x40.link/server"
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/andrewhowdencom/x40.link/storage/boltdb"
 	"github.com/andrewhowdencom/x40.link/storage/memory"
@@ -87,40 +85,15 @@ func RunServe(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("%w: %s", sysexits.Software, err)
 	}
 
-	// Stub implementation to validate runtime constraints.
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Sample Request
-		if r.URL.Path == "/check" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
+	srv, err := server.New(
+		server.WithStorage(str),
+		server.WithListenAddress(viper.GetString(configuration.ServerListenAddress)),
+	)
+	if err != nil {
+		return fmt.Errorf("%w: %s", sysexits.Software, err)
+	}
 
-		// TODO: Figure out a saner way to do this
-		url := &url.URL{
-			// There's no support for anything else at this time
-			Host: r.Host,
-			Path: r.URL.Path,
-		}
-
-		// Temporary for debugging in production
-		log.Println(url.String())
-
-		ret, err := str.Get(url)
-
-		// Iterate though the potential failure modes.
-		if errors.Is(err, storage.ErrNotFound) {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		} else if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Add("Location", ret.String())
-		w.WriteHeader(http.StatusTemporaryRedirect)
-	})
-
-	return http.ListenAndServe(viper.GetString(configuration.ServerListenAddress), http.DefaultServeMux)
+	return srv.Start()
 }
 
 // getStorage fetches the appropriate storage for the supplied configuration. Assumes that at least one configuration
