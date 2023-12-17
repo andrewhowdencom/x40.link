@@ -10,10 +10,6 @@ import (
 	"go.etcd.io/bbolt"
 )
 
-// TODO:
-//
-// 1. Document the variadic arguments pattern in README.
-
 var (
 	ErrFailedToSetupDatabase = errors.New("failed to setup backing database")
 	ErrFailedToTX            = errors.New("failed to complete database transaction")
@@ -22,6 +18,7 @@ var (
 	txBucketName = []byte("short-links")
 )
 
+// Option modifies the bolt options, allowing the user to set some property of the database.
 type Option func(db *bbolt.Options) error
 
 // BoltDB is an implementation of the link shortener that stores links in the
@@ -60,6 +57,16 @@ func New(path string, opts ...Option) (*BoltDB, error) {
 	return &BoltDB{
 		db: new,
 	}, nil
+}
+
+// WithFileLockWait modifies the timeout that Unix based operating systems will wait for the file lock
+// to be freed.
+func WithFileLockWait(dur time.Duration) Option {
+	return func(db *bbolt.Options) error {
+		db.Timeout = dur
+
+		return nil
+	}
 }
 
 func (b *BoltDB) Get(in *url.URL) (*url.URL, error) {

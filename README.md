@@ -23,7 +23,7 @@ You can learn more on [the go website](https://go.dev/blog/examples). Some tests
 
 ### 📈 Algorithmic Complexity
 
-You'll see [different implementations of the same problem] —
+You'll see different implementations of the same problem —
 [finding a URL in a set](https://github.com/andrewhowdencom/s3k.link/tree/main/storage/memory). There is the
 naive, [linear implementation](https://github.com/andrewhowdencom/s3k.link/blob/main/storage/memory/linear_search.go),
 a [binary search implementation](https://github.com/andrewhowdencom/s3k.link/blob/main/storage/memory/binary_search.go),
@@ -38,6 +38,12 @@ Read the [commit history to understand my thinking](https://github.com/andrewhow
 writing each unit of work. You can see how the thinking has changed over time! You can read more
 [about why I think this is so important](https://medium.com/@andrewhowdencom/anatomy-of-a-good-commit-message-acd9c4490437)
 
+### ♾️ Functional Arguments
+
+Look at [the BoltDB-backed URL storage](https://github.com/andrewhowdencom/s3k.link/blob/main/storage/boltdb/boltdb.go#L26)
+and see the variadic argument approach [popularized by Dave Cheany](https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis)
+and in broad use at [Uber](https://github.com/uber-go/guide/blob/master/style.md#functional-options).
+
 ### ❓ Remaining Work
 
 Quite a bit of work remains in this project before it becomes "production-ready!" For example,
@@ -46,7 +52,7 @@ Quite a bit of work remains in this project before it becomes "production-ready!
 2. The deployment on a cloud infrastructure provider (e.g., Kubernetes)
 3. The configuration of a public cloud (e.g., Terraform)
 4. Observability instrumentation (e.g., logs, metrics, traces, profiling)
-5. Data Storage (e.g., Postgres, BoltDB, or DynamoDB)
+5. Data Backups (e.g. Scheduled, Commit Logs and so on)
 6. Service Level Management (e.g., SLOs, SLAs)
 
 I have worked with all of these technologies before; however, I have only a limited number of daily hours! Perhaps
