@@ -7,10 +7,10 @@ env:
   CGO_ENABLED: "0"
 
 tasks:
-  build:
+  bin-all:
     desc: "Builds the go binaries"
     deps:
-      - "clean"
+      - "bin-clean"
     summary: |
       Builds the go binaries
 
@@ -40,12 +40,12 @@ tasks:
         - GOOS: "windows"
           GOARCH: "arm64"
 
-        task: build-bin
+        task: bin
         vars:
           GOOS: "{{ .ITEM.GOOS }}"
           GOARCH: "{{ .ITEM.GOARCH }}"
 
-  build-bin:
+  bin:
     desc: "Build a go binary specific to an architecture and operating system"
     requires:
       vars: [GOOS, GOARCH]
@@ -53,7 +53,36 @@ tasks:
       - mkdir -p "dist/{{ .GOOS }}+{{ .GOARCH }}"
       - go build -o "dist/{{ .GOOS }}+{{ .GOARCH }}/s3k.link{{ exeExt }}"
 
-  clean:
+  bin-clean:
     desc: "Clean the generated artifacts"
     cmds:
-      - rm -rf dist
+      - "rm -rf dist"
+
+  docs:
+    desc: "Build the static HTML for the documentation"
+    summary: |
+      Generate the static HTML for the documentation
+
+      This documentation will then be deployed to s3k.app (or similar) so that it can be viewed by people looking
+      to reproduce the service.
+    deps: ["docs-clean"]
+    cmds:
+      - "poetry run mkdocs build"
+
+  docs-clean:
+    desc: "Clean the generated documentation"
+    dir: "./docs"
+    cmds:
+      - "rm -rf docs/content"
+
+  docs-install:
+    desc: "Install the dependencies required for the documentation"
+    dir: "./docs"
+    cmds:
+      - "poetry install --no-root"
+
+  docs-view:
+    desc: "View the documentation on the local machine"
+    dir: "./docs"
+    cmds:
+      - "poetry run mkdocs serve"

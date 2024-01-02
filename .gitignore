@@ -16,3 +16,6 @@ s3k.link
 
 # Go workspace file
 go.work
+
+# Generated Documentation
+docs/site
