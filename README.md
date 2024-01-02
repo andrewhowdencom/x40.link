@@ -32,6 +32,18 @@ Read the [commit history to understand my thinking](https://github.com/andrewhow
 writing each unit of work. You can see how the thinking has changed over time! You can read more
 [about why I think this is so important](https://medium.com/@andrewhowdencom/anatomy-of-a-good-commit-message-acd9c4490437)
 
+**🚆 Infrastructure as Code**
+
+Look at the [infrastructure as code](https://github.com/andrewhowdencom/x40.link/tree/main/deploy/prod/tf) definitions,
+using the [Tofu](https://opentofu.org/) (or open-source Terraform implementation) infrastructure tool to
+[create DNS records](https://github.com/andrewhowdencom/x40.link/blob/main/deploy/prod/tf/dns.tf). See how it is
+[configured to store its state in Google Cloud.](https://github.com/andrewhowdencom/x40.link/blob/main/deploy/prod/tf/state.tf)
+
+You can check the infrastructure by visiting the managed domains with:
+
+* **docs**: https://x40.dev
+* **app**: https://x40.link
+
 **🤖 Task Runner**
 
 Run tasks via the [Taskfile](https://github.com/andrewhowdencom/x40.link/blob/main/Taskfile.yml) from the excellent

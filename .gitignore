@@ -5,6 +5,11 @@
 dist/*
 x40.link
 
+# Terraform artifacts
+next.planfile
+*.backup
+
+
 # Test binary, built with `go test -c`
 *.test
 
@@ -13,6 +18,7 @@ x40.link
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+deploy/prod/tf/.terraform
 
 # Go workspace file
 go.work

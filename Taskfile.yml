@@ -87,3 +87,15 @@ tasks:
     dir: "./docs"
     cmds:
       - "poetry run mkdocs serve"
+
+  infra-plan:
+    desc: "Plan the infrastructure changes, and validate their output"
+    dir: "deploy/prod/tf"
+    cmds:
+      - "tofu plan -out next.planfile"
+
+  infra-apply:
+    desc: "Apply previously designed infrastructure changes"
+    dir: "deploy/prod/tf"
+    cmds:
+      - "tofu apply next.planfile"
