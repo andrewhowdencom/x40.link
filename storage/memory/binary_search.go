@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/andrewhowdencom/s3k.link/storage"
+	"github.com/andrewhowdencom/x40.link/storage"
 )
 
 // BinarySearch is an implementation of the search of a (sorted) data set that has much better performance

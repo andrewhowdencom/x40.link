@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/andrewhowdencom/s3k.link/storage"
+	"github.com/andrewhowdencom/x40.link/storage"
 )
 
 // LinearSearch is an implementation of "worst case" search through the data. It has O(n) performance (i.e. for each

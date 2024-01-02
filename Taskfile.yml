@@ -51,7 +51,7 @@ tasks:
       vars: [GOOS, GOARCH]
     cmds:
       - mkdir -p "dist/{{ .GOOS }}+{{ .GOARCH }}"
-      - go build -o "dist/{{ .GOOS }}+{{ .GOARCH }}/s3k.link{{ exeExt }}"
+      - go build -o "dist/{{ .GOOS }}+{{ .GOARCH }}/x40.link{{ exeExt }}"
 
   bin-clean:
     desc: "Clean the generated artifacts"
@@ -63,9 +63,10 @@ tasks:
     summary: |
       Generate the static HTML for the documentation
 
-      This documentation will then be deployed to s3k.app (or similar) so that it can be viewed by people looking
+      This documentation will then be deployed to x40.app (or similar) so that it can be viewed by people looking
       to reproduce the service.
-    deps: ["docs-clean"]
+    dir: "./docs"
+    deps: ["docs-clean", "docs-install"]
     cmds:
       - "poetry run mkdocs build"
 

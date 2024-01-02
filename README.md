@@ -1,6 +1,6 @@
-# s3k.link
+# @.link
 
-The [Skink](https://en.wikipedia.org/wiki/Skink) short link service.
+The short link service. Named `x40`, it represents the hex for the "@" character. Created as firebase is [going away]
 
 [going away]: https://firebase.google.com/support/dynamic-links-faq
 
@@ -12,29 +12,29 @@ This project functions as a demonstration of work. In the future, I will likely 
 **📈 Algorithmic Complexity**
 
 You'll see different implementations of the same problem —
-[finding a URL in a set](https://github.com/andrewhowdencom/s3k.link/tree/main/storage/memory). There is the
-naive, [linear implementation](https://github.com/andrewhowdencom/s3k.link/blob/main/storage/memory/linear_search.go),
-a [binary search implementation](https://github.com/andrewhowdencom/s3k.link/blob/main/storage/memory/binary_search.go),
+[finding a URL in a set](https://github.com/andrewhowdencom/x40.link/tree/main/storage/memory). There is the
+naive, [linear implementation](https://github.com/andrewhowdencom/x40.link/blob/main/storage/memory/linear_search.go),
+a [binary search implementation](https://github.com/andrewhowdencom/x40.link/blob/main/storage/memory/binary_search.go),
 and the one we'd
-actually use — a very [simple hashmap](https://github.com/andrewhowdencom/s3k.link/blob/main/storage/memory/hash_table.go).
+actually use — a very [simple hashmap](https://github.com/andrewhowdencom/x40.link/blob/main/storage/memory/hash_table.go).
 There are even benchmarks to
-[validate their performance!](https://github.com/andrewhowdencom/s3k.link/blob/main/storage/storage_test.go#L87-L149)
+[validate their performance!](https://github.com/andrewhowdencom/x40.link/blob/main/storage/storage_test.go#L87-L149)
 
 **♾️ Functional Arguments**
 
-Look at [the BoltDB-backed URL storage](https://github.com/andrewhowdencom/s3k.link/blob/main/storage/boltdb/boltdb.go#L26)
+Look at [the BoltDB-backed URL storage](https://github.com/andrewhowdencom/x40.link/blob/main/storage/boltdb/boltdb.go#L26)
 and see the variadic argument approach [popularized by Dave Cheany](https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis)
 and in broad use at [Uber](https://github.com/uber-go/guide/blob/master/style.md#functional-options).
 
 **✍️ Helpful commit messages**
 
-Read the [commit history to understand my thinking](https://github.com/andrewhowdencom/s3k.link/commits/main/) while
+Read the [commit history to understand my thinking](https://github.com/andrewhowdencom/x40.link/commits/main/) while
 writing each unit of work. You can see how the thinking has changed over time! You can read more
 [about why I think this is so important](https://medium.com/@andrewhowdencom/anatomy-of-a-good-commit-message-acd9c4490437)
 
 **🤖 Task Runner**
 
-Run tasks via the [Taskfile](https://github.com/andrewhowdencom/s3k.link/blob/main/Taskfile.yml) from the excellent
+Run tasks via the [Taskfile](https://github.com/andrewhowdencom/x40.link/blob/main/Taskfile.yml) from the excellent
 [Task Files](https://taskfile.dev/) project and see how to build the application, including for different
 operating systems. Get a better understanding of the available tasks via:
 
@@ -51,12 +51,12 @@ $ task --summary <task>
 **🧪 Test Driven Development**
 
 Take a look around at the files
-[suffixed with _test](https://github.com/search?q=repo%3Aandrewhowdencom%2Fs3k.link+path%3A_test.go&type=code). You'll
+[suffixed with _test](https://github.com/search?q=repo%3Aandrewhowdencom%2Fx40.link+path%3A_test.go&type=code). You'll
 see the popular "table-driven test" format, with many tests being invoked in parallel to ensure fast execution and concurrency safety.
 You'll also see the occasional
-[benchmark](https://github.com/search?q=repo%3Aandrewhowdencom%2Fs3k.link+path%3A_test.go+Benchmark&type=code), as well
+[benchmark](https://github.com/search?q=repo%3Aandrewhowdencom%2Fx40.link+path%3A_test.go+Benchmark&type=code), as well
 as well as some
-[testable examples](https://github.com/search?q=repo%3Aandrewhowdencom%2Fs3k.link+path%3A_test.go+Example&type=code).
+[testable examples](https://github.com/search?q=repo%3Aandrewhowdencom%2Fx40.link+path%3A_test.go+Example&type=code).
 You can learn more on [the go website](https://go.dev/blog/examples). Some tests even validate concurrency via
 [the go race detector](https://go.dev/blog/race-detector) and `go test -race`!
 

@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"sync"
 
-	"github.com/andrewhowdencom/s3k.link/storage"
+	"github.com/andrewhowdencom/x40.link/storage"
 )
 
 // HashTable stores the entire dataset within Go's implementation of a hash table (a map). It

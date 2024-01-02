@@ -6,7 +6,7 @@ package main
 import (
 	"os"
 
-	"github.com/andrewhowdencom/s3k.link/cmd"
+	"github.com/andrewhowdencom/x40.link/cmd"
 )
 
 func main() {

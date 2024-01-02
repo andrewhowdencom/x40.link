@@ -20,7 +20,7 @@ func TestBinarySearchPutOrder(t *testing.T) {
 
 	for _, slug := range slugs {
 		err := bs.Put(&url.URL{
-			Host: "s3k", Path: "/" + slug,
+			Host: "x40", Path: "/" + slug,
 		}, &url.URL{
 			Host: "andrewhowden.com", Path: "/tests",
 		})

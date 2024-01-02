@@ -8,10 +8,10 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/andrewhowdencom/s3k.link/storage"
-	"github.com/andrewhowdencom/s3k.link/storage/memory"
-	"github.com/andrewhowdencom/s3k.link/storage/test"
-	"github.com/andrewhowdencom/s3k.link/storage/yaml"
+	"github.com/andrewhowdencom/x40.link/storage"
+	"github.com/andrewhowdencom/x40.link/storage/memory"
+	"github.com/andrewhowdencom/x40.link/storage/test"
+	"github.com/andrewhowdencom/x40.link/storage/yaml"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,14 +37,14 @@ func TestNewYaml(t *testing.T) {
 			str:  memory.NewHashTable(),
 			in: bytes.NewBufferString(`
 ---
-- from: //s3k/foo
+- from: //x40/foo
   to: //k3s/bar
-- from: //s3k/bar
+- from: //x40/bar
   to: //k3s/baz
 `),
 			urls: []urls{
 				{
-					f: &url.URL{Host: "s3k", Path: "/foo"},
+					f: &url.URL{Host: "x40", Path: "/foo"},
 					t: &url.URL{Host: "k3s", Path: "/bar"},
 				},
 			},
@@ -55,7 +55,7 @@ func TestNewYaml(t *testing.T) {
 			in: bytes.NewBufferString(`
 - from: "//	/foo"
   to: //k3s/bar
-- from: //s3k/bar
+- from: //x40/bar
   to: //k3s/baz				
 `),
 			urls: []urls{
@@ -76,9 +76,9 @@ func TestNewYaml(t *testing.T) {
 			str:  test.New(test.WithError(te)),
 			in: bytes.NewBufferString(`
 ---
-- from: //s3k/foo
+- from: //x40/foo
   to: //k3s/bar
-- from: //s3k/bar
+- from: //x40/bar
   to: //k3s/baz
 `),
 			err: storage.ErrStorageSetupFailed,
@@ -110,7 +110,7 @@ func TestYamlRejectWrite(t *testing.T) {
 	assert.Nil(t, err)
 
 	err = y.Put(
-		&url.URL{Host: "s3k", Path: "/foo"},
+		&url.URL{Host: "x40", Path: "/foo"},
 		&url.URL{Host: "k3s", Path: "/bar"},
 	)
 

@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/andrewhowdencom/s3k.link/storage"
+	"github.com/andrewhowdencom/x40.link/storage"
 	"go.etcd.io/bbolt"
 )
 

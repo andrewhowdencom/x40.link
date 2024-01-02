@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/andrewhowdencom/s3k.link/storage/memory"
+	"github.com/andrewhowdencom/x40.link/storage/memory"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -13,9 +13,9 @@ import (
 // would be.
 func ExampleNewHashTable() {
 	// Consider the following several URLs
-	// s3k/a → andrewhowden.com/a
-	// s3k/n → andrewhowden.com/longer-n
-	// s3k.link/f00 → google.com
+	// x40/a → andrewhowden.com/a
+	// x40/n → andrewhowden.com/longer-n
+	// x40.link/f00 → google.com
 
 	ht := memory.NewHashTable()
 
@@ -23,9 +23,9 @@ func ExampleNewHashTable() {
 	for _, tu := range []struct {
 		f, t string
 	}{
-		{f: "s3k/a", t: "andrewhowden.com/a"},
-		{f: "s3k/n", t: "andrewhowden.com/longer-n"},
-		{f: "s3k.link/f00", t: "google.com"},
+		{f: "x40/a", t: "andrewhowden.com/a"},
+		{f: "x40/n", t: "andrewhowden.com/longer-n"},
+		{f: "x40.link/f00", t: "google.com"},
 	} {
 		// Normally, we should be handling errors from both the URL parsing as well as attempting to write
 		// to storage. The hashmap has no failure modes, but we should not rely on this being persistent
@@ -37,7 +37,7 @@ func ExampleNewHashTable() {
 	}
 
 	// Lookup a value supplied by the user
-	l, _ := url.Parse("s3k/a")
+	l, _ := url.Parse("x40/a")
 
 	// Normally, we should handle the error from the fetch operation (e.g. not found)
 	ret, _ := ht.Get(l)
@@ -51,13 +51,13 @@ func TestNewHashTable(t *testing.T) {
 
 	ht := memory.NewHashTable()
 	ht.Put(&url.URL{
-		Host: "s3k",
+		Host: "x40",
 	}, &url.URL{
 		Host: "andrewhowden.com",
 	})
 
 	res, err := ht.Get(&url.URL{
-		Host: "s3k",
+		Host: "x40",
 	})
 
 	assert.Nil(t, err)

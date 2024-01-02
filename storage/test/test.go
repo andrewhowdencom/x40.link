@@ -4,7 +4,7 @@ package test
 import (
 	"net/url"
 
-	"github.com/andrewhowdencom/s3k.link/storage"
+	"github.com/andrewhowdencom/x40.link/storage"
 )
 
 // TestOption modifies the behavior of New() in specific ways that make it valuable for the test.

@@ -44,9 +44,9 @@ func TestGetStorage(t *testing.T) {
 
 				file.Write([]byte(`
 ---
-- from: //s3k/foo
+- from: //x40/foo
   to: //k3s/bar
-- from: //s3k/bar
+- from: //x40/bar
   to: //k3s/baz
 `))
 				file.Close()

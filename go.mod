@@ -1,4 +1,4 @@
-module github.com/andrewhowdencom/s3k.link
+module github.com/andrewhowdencom/x40.link
 
 go 1.21.4
 

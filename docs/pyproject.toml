@@ -1,10 +1,9 @@
 [tool.poetry]
-name = "s3k-link+docs"
+name = "x40.dev"
 version = "1.0.0"
-description = "The documentation for the \"s3k.link\" project"
+description = "The documentation for the @link project"
 authors = ["Andrew Howden <hello@andrewhowden.com>"]
 readme = "README.md"
-packages = [{include = "s3k"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"

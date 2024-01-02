@@ -3,7 +3,7 @@
 #
 # Binaries for programs and plugins
 dist/*
-s3k.link
+x40.link
 
 # Test binary, built with `go test -c`
 *.test

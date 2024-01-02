@@ -8,7 +8,7 @@ import (
 )
 
 var Root = &cobra.Command{
-	Use:   "s3k.link",
+	Use:   "x40.link",
 	Short: "Links for Skinks",
 	Long: `A short link service. Redirects users to longer links based on an
 input code.

@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/andrewhowdencom/s3k.link/storage"
-	"github.com/andrewhowdencom/s3k.link/storage/boltdb"
-	"github.com/andrewhowdencom/s3k.link/storage/memory"
+	"github.com/andrewhowdencom/x40.link/storage"
+	"github.com/andrewhowdencom/x40.link/storage/boltdb"
+	"github.com/andrewhowdencom/x40.link/storage/memory"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -67,7 +67,7 @@ func benchmark(b *testing.B, str storage.Storer, iter int) {
 		rand.Read(bytes)
 
 		next := &url.URL{
-			Host: "s3k",
+			Host: "x40",
 			Path: base64.URLEncoding.EncodeToString(bytes),
 		}
 		urls = append(urls, next)
@@ -89,13 +89,13 @@ func race(str storage.Storer) {
 			// If the number is divisible by 4 (which it should be, 25% of the time) then make it a write operation.
 			if rand.Int()%4 == 0 {
 				str.Put(&url.URL{
-					Host: "s3k",
+					Host: "x40",
 				}, &url.URL{
 					Host: "k3s",
 				})
 			} else {
 				str.Get(&url.URL{
-					Host: "s3k",
+					Host: "x40",
 				})
 			}
 		}()
@@ -157,14 +157,14 @@ func TestComplianceAll(t *testing.T) {
 			defer teardownFunc[n]("compliance")
 
 			// Query for a record that doesn't exit, to ensure the data store will not panic.
-			_, err := str.Get(&url.URL{Host: "s3k"})
+			_, err := str.Get(&url.URL{Host: "x40"})
 			assert.ErrorIs(t, err, storage.ErrNotFound)
 
 			// Insert and query a record.
-			str.Put(&url.URL{Host: "s3k"}, &url.URL{Host: "andrewhowden.com"})
+			str.Put(&url.URL{Host: "x40"}, &url.URL{Host: "andrewhowden.com"})
 
 			res, err := str.Get(&url.URL{
-				Host: "s3k",
+				Host: "x40",
 			})
 
 			assert.Nil(t, err)

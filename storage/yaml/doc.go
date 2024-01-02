@@ -2,8 +2,8 @@
 // expected to be in the format:
 //
 //	---
-//	- from: //s3k/foo
-//	- to: //s3k/bar
+//	- from: //x40/foo
+//	- to: //x40/bar
 //
 // Where there is no scheme (assumed to be the default case), the "//" is required to clearly indicate this is a
 // schemeless URL.

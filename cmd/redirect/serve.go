@@ -10,12 +10,12 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/andrewhowdencom/s3k.link/configuration"
-	"github.com/andrewhowdencom/s3k.link/storage"
-	"github.com/andrewhowdencom/s3k.link/storage/boltdb"
-	"github.com/andrewhowdencom/s3k.link/storage/memory"
-	"github.com/andrewhowdencom/s3k.link/storage/yaml"
 	"github.com/andrewhowdencom/sysexits"
+	"github.com/andrewhowdencom/x40.link/configuration"
+	"github.com/andrewhowdencom/x40.link/storage"
+	"github.com/andrewhowdencom/x40.link/storage/boltdb"
+	"github.com/andrewhowdencom/x40.link/storage/memory"
+	"github.com/andrewhowdencom/x40.link/storage/yaml"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -57,7 +57,7 @@ func init() {
 	serveFlagSet.Lookup(flagStrHashMap).NoOptDefVal = "true"
 	viper.BindPFlag(configuration.StorageHashMap, serveFlagSet.Lookup(flagStrHashMap))
 
-	serveFlagSet.StringP(flagStrBoltDB, "b", "/usr/local/share/s3k/urls.db", "The place to store the URL Database")
+	serveFlagSet.StringP(flagStrBoltDB, "b", "/usr/local/share/x40/urls.db", "The place to store the URL Database")
 	viper.BindPFlag(configuration.StoreBoltDBFile, serveFlagSet.Lookup(flagStrBoltDB))
 
 	// Bind the flag set to the command, and ensure it validated.

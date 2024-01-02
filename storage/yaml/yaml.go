@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"net/url"
 
-	"github.com/andrewhowdencom/s3k.link/storage"
+	"github.com/andrewhowdencom/x40.link/storage"
 	parser "gopkg.in/yaml.v3"
 )
 

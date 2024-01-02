@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/andrewhowdencom/s3k.link/cmd"
 	"github.com/andrewhowdencom/sysexits"
+	"github.com/andrewhowdencom/x40.link/cmd"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 )
