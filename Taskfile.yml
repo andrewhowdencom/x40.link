@@ -1,0 +1,59 @@
+# https://taskfile.dev
+
+version: '3'
+
+env:
+  # Disable calls to CGO, so that the binaries compiled are static.
+  CGO_ENABLED: "0"
+
+tasks:
+  build:
+    desc: "Builds the go binaries"
+    deps:
+      - "clean"
+    summary: |
+      Builds the go binaries
+
+      Generates go binaries for all supported operating systems, and stores them under "dist/"
+      with the appropriate suffix.
+    cmds:
+      - for:
+        # Linux (both Intel and ARM)
+        - GOOS: "linux"
+          GOARCH: "amd64"
+        - GOOS: "linux"
+          GOARCH: "arm64"
+
+        # Raspberry Pi
+        - GOOS: "linux"
+          GOARCH: "arm"
+
+        # MacOS (Older Intel & Newer ARM)
+        - GOOS: "darwin"
+          GOARCH: "amd64"
+        - GOOS: "darwin"
+          GOARCH: "arm64"
+
+        # Windows
+        - GOOS: "windows"
+          GOARCH: "amd64"
+        - GOOS: "windows"
+          GOARCH: "arm64"
+
+        task: build-bin
+        vars:
+          GOOS: "{{ .ITEM.GOOS }}"
+          GOARCH: "{{ .ITEM.GOARCH }}"
+
+  build-bin:
+    desc: "Build a go binary specific to an architecture and operating system"
+    requires:
+      vars: [GOOS, GOARCH]
+    cmds:
+      - mkdir -p "dist/{{ .GOOS }}+{{ .GOARCH }}"
+      - go build -o "dist/{{ .GOOS }}+{{ .GOARCH }}/s3k.link{{ exeExt }}"
+
+  clean:
+    desc: "Clean the generated artifacts"
+    cmds:
+      - rm -rf dist

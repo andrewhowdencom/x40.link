@@ -44,6 +44,22 @@ Look at [the BoltDB-backed URL storage](https://github.com/andrewhowdencom/s3k.l
 and see the variadic argument approach [popularized by Dave Cheany](https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis)
 and in broad use at [Uber](https://github.com/uber-go/guide/blob/master/style.md#functional-options).
 
+### 🤖 Documented Task Runner
+
+Run tasks via the [Taskfile](https://github.com/andrewhowdencom/s3k.link/blob/main/Taskfile.yml) from the excellent
+[Task Files](https://taskfile.dev/) project and see how to build the application, including for different
+operating systems. Get a better understanding of the available tasks via:
+
+```bash
+$ task --list
+```
+
+Command, or learn more about each task with:
+
+```bash
+$ task --summary <task>
+```
+
 ### ❓ Remaining Work
 
 Quite a bit of work remains in this project before it becomes "production-ready!" For example,

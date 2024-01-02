@@ -9,13 +9,13 @@ The application can be deployed locally as a compute-local forwarder, similar to
 1. Build the application
 
     ```bash
-    go build
+    task build
     ```
 
 2. Move it to a suitable directory
 
     ```bash
-    mv s3k.link /usr/local/bin/
+    mv dist/linux+<architecture>/s3k.link /usr/local/bin/
     ```
 
 3. Write some URLs to a place that the application can read

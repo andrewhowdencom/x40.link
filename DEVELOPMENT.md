@@ -3,6 +3,12 @@
 This file is advisory only, and is kept up to date as a best effort. The final description as to why and how things
 are done is, and will remain, version control. See `git log path/to/file` for details.
 
+## Tools
+
+You will need the following:
+
+* $ [task](https://taskfile.dev/)
+
 ## File Layout
 
 | Directory | Description                                                                                             |
