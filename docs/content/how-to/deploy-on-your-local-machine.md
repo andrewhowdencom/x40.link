@@ -1,8 +1,4 @@
-# Deployment
-
-There are various ways in which this application can be used. They'll be documented here as they're supported.
-
-## Local
+# Deploy on your local machine
 
 The application can be deployed locally as a compute-local forwarder, similar to the [GoLinks project]. To do this:
 
@@ -42,7 +38,7 @@ The application can be deployed locally as a compute-local forwarder, similar to
     ```bash
     cat <<'EOF' > /etc/systemd/system/x40.link.service
     [Unit]
-    Description="The Skink Link Shortener"
+    Description="The @link Shortener"
     After=network-online.target
 
     [Service]
@@ -75,6 +71,6 @@ The application can be deployed locally as a compute-local forwarder, similar to
     EOF
     ```
 
-8. Navigate to http://x40 in your browser. It'll probably warn you about HTTPS, but you can click through that.
+8. Navigate to `http://x40` in your browser. It'll probably warn you about HTTPS, but you can click through that.
 
 [GoLinks project]: https://github.com/GoLinks/golinks
