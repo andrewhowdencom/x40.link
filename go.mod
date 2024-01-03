@@ -5,8 +5,10 @@ go 1.21.4
 require (
 	github.com/andrewhowdencom/sysexits v0.0.0-20230825110138-f9dd56ec6fce
 	github.com/spf13/cobra v1.8.0
+	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.18.1
 	github.com/stretchr/testify v1.8.4
+	go.etcd.io/bbolt v1.3.8
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -24,9 +26,7 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/spf13/afero v1.11.0 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	go.etcd.io/bbolt v1.3.8 // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.9.0 // indirect
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9 // indirect

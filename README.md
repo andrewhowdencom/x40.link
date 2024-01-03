@@ -1,8 +1,12 @@
 # @.link
 
-The short link service. Named `x40`, it represents the hex for the "@" character. Created as firebase is [going away]
+[![Go Reference](https://pkg.go.dev/badge/github.com/andrewhowdencom/x40.link.svg)](https://pkg.go.dev/github.com/andrewhowdencom/x40.link)
+
+The short link service. Named `x40`, it represents the hex for the "@" character. Created as firebase is [going away]. 
+Learn more via the [documentation]
 
 [going away]: https://firebase.google.com/support/dynamic-links-faq
+[documentation]: https://www.x40.dev
 
 ## Understanding this work
 

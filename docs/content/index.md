@@ -1,14 +1,16 @@
-# What is this?
+# @.link
 
 The `@.link` (or just @link) service is a link shorting service. You can find it
-on [GitHub](https://github.com/andrewhowdencom/x40.link)
+on [GitHub](https://github.com/andrewhowdencom/x40.link).
+
+[![Go Reference](https://pkg.go.dev/badge/github.com/andrewhowdencom/x40.link.svg)](https://pkg.go.dev/github.com/andrewhowdencom/x40.link)
 
 ## Getting Started
 
 If you are a:
 
 1. **Developer**, looking to deploy this project then unfortunately the deployment documentation is not yet written.
-   It is coming soon!
+   It is coming soon! 
 2. **Hiring Manager**, looking to see whether the author ([Andrew Howden](https://www.linkedin.com/in/andrewhowdencom/))
    can write code, documentation, infrastructure or other software artifacts, the best starting point for you is the
    [project README](https://github.com/andrewhowdencom/x40.link).
