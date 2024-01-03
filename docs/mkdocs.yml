@@ -6,6 +6,7 @@ theme:
   features:
     - content.code.copy
     - navigation.tabs
+    - navigation.expand
 
 markdown_extensions:
   - pymdownx.highlight:
