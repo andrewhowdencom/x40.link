@@ -19,6 +19,7 @@ next.planfile
 # Dependency directories (remove the comment below to include it)
 # vendor/
 deploy/prod/tf/.terraform
+deploy/gh/tf/.terraform
 
 # Go workspace file
 go.work
