@@ -1,0 +1,38 @@
+name: Validate
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: "test"
+    # The machine type on which the workload is running
+    # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#choosing-github-hosted-runners
+    runs-on: ubuntu-22.04
+    steps:
+
+    # Check out the head of the main branch
+    # See https://github.com/actions/checkout
+    - uses: actions/checkout@v4
+
+    # Install Go
+    # See https://github.com/actions/setup-go
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    # Install the Task Runner
+    - name: Install Task
+      uses: arduino/setup-task@v1
+
+    # Validation
+    - name: Build Binaries (check the syntax)
+      run: task bin/all
+
+    # Test
+    - name: Test
+      run: task test
