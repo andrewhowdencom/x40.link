@@ -8,6 +8,13 @@ on:
 
 jobs:
   build:
+    # Permissions required for golangci-lint to push its status checks back to GitHub.
+    # See https://github.com/golangci/golangci-lint-action
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: write
+
     name: "test"
     # The machine type on which the workload is running
     # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#choosing-github-hosted-runners
@@ -36,3 +43,6 @@ jobs:
     # Test
     - name: Test
       run: task test
+
+    - name: "Lint"
+      uses: golangci/golangci-lint-action@v3

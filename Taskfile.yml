@@ -116,6 +116,11 @@ tasks:
     cmds:
       - "tofu apply next.planfile"
 
+  lint:
+    desc: "Validate the code against common standards"
+    cmds:
+      - golangci-lint run ./...
+
   test:
     env:
       CGO_ENABLED: 1
