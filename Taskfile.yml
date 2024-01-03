@@ -82,6 +82,18 @@ tasks:
     cmds:
       - "poetry install --no-root"
 
+  docs-tar:
+    desc: "Package the documentation for release"
+    deps: ["docs"]
+    cmds:
+      - mkdir -p dist
+      - |
+        tar \
+            --dereference --hard-dereference \
+            --directory docs/site/ \
+            -cvf dist/docs.tar.gz \
+            .
+
   docs-view:
     desc: "View the documentation on the local machine"
     dir: "./docs"

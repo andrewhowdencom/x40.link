@@ -1,5 +1,5 @@
 ---
-site_name: Short Links
+site_name: "@.link"
 docs_dir: content
 theme:
   name: material

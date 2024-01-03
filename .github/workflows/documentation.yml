@@ -1,0 +1,62 @@
+---
+name: "build:documentation"
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  # Build the docs
+  build:
+    # The machine type on which the workload is running
+    # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#choosing-github-hosted-runners
+    runs-on: ubuntu-22.04
+    steps:
+      # Setup Python (& Dependencies)
+      - name: "Setup Python"
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      - name: "Install poetry"
+        run: pipx install poetry
+
+      # Install the Task Runner
+      - name: Install Task
+        uses: arduino/setup-task@v1
+
+      - name: Checkout the main branch
+        uses: actions/checkout@v4
+
+      # Generate the documentation
+      - name: "Build the documentation artifact"
+        run: task docs-tar
+
+      # Upload it
+      - name: "Upload Artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs+${{ github.sha }}
+          path: "dist/docs.tar.gz"
+          retention-days: 1
+          if-no-files-found: error
+  # Deploy the compiled docs
+  deploy:
+    needs: build
+
+    # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+    # See https://github.com/actions/deploy-pages
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    runs-on: ubuntu-22.04
+    steps:
+      - name: "Deploy to GitHub pages"
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: docs+${{ github.sha }}
