@@ -7,8 +7,8 @@ resource "github_repository" "x40-link" {
 
   description = "The codebase powering @.link"
 
-  allow_merge_commit = true
-  allow_rebase_merge = true
+  allow_merge_commit = false
+  allow_rebase_merge = false
   allow_squash_merge = true
 
   has_downloads = true
@@ -18,6 +18,20 @@ resource "github_repository" "x40-link" {
 
   # Automatically merge in code when it passes all tests. Need to 
   allow_auto_merge = true
+
+  # Cleanup Branches
+  delete_branch_on_merge = true
+
+  # Prevent secrets inadvertently propagating
+  security_and_analysis {
+    secret_scanning {
+      status = "enabled"
+    }
+
+    secret_scanning_push_protection {
+      status = "enabled"
+    }
+  }
 
   pages {
     build_type = "workflow"
