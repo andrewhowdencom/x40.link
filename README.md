@@ -20,6 +20,14 @@ actually use — a very [simple hashmap](https://github.com/andrewhowdencom/x40.
 There are even benchmarks to
 [validate their performance!](https://github.com/andrewhowdencom/x40.link/blob/main/storage/storage_test.go#L87-L149)
 
+**📖 Documentation**
+
+Learn more about the project, including how to solve specific problems, through the documentation website at
+[x40.dev](https://www.x40.dev). This documentation follows the goal-oriented
+[Divio documentation structure](https://documentation.divio.com/) to help users of the documentation find what
+they're looking for quickly, as well as allow developers to add documentation in a structured way that does
+not become a mess over time.
+
 **♾️ Functional Arguments**
 
 Look at [the BoltDB-backed URL storage](https://github.com/andrewhowdencom/x40.link/blob/main/storage/boltdb/boltdb.go#L26)
@@ -77,7 +85,6 @@ You can learn more on [the go website](https://go.dev/blog/examples). Some tests
 Quite a bit of work remains in this project before it becomes "production-ready!" For example,
 
 1. The definition of the project as a container
-2. The deployment on a cloud infrastructure provider (e.g., Kubernetes)
 3. The configuration of a public cloud (e.g., Terraform)
 4. Observability instrumentation (e.g., logs, metrics, traces, profiling)
 5. Data Backups (e.g. Scheduled, Commit Logs and so on)
