@@ -5,6 +5,7 @@ theme:
   name: material
   features:
     - content.code.copy
+    - navigation.tabs
 
 markdown_extensions:
   - pymdownx.highlight:
