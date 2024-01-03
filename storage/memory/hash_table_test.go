@@ -2,6 +2,7 @@ package memory_test
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 	"testing"
 
@@ -33,7 +34,10 @@ func ExampleNewHashTable() {
 		from, _ := url.Parse(tu.f)
 		to, _ := url.Parse(tu.t)
 
-		ht.Put(from, to)
+		err := ht.Put(from, to)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	// Lookup a value supplied by the user
@@ -50,11 +54,11 @@ func TestNewHashTable(t *testing.T) {
 	t.Parallel()
 
 	ht := memory.NewHashTable()
-	ht.Put(&url.URL{
+	assert.Nil(t, ht.Put(&url.URL{
 		Host: "x40",
 	}, &url.URL{
 		Host: "andrewhowden.com",
-	})
+	}))
 
 	res, err := ht.Get(&url.URL{
 		Host: "x40",

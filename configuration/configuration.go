@@ -3,7 +3,7 @@ package configuration
 
 const (
 	// Storage* is configuration related to the link storage logic.
-	StorageYamlFile = "storage.yaml.file"
-	StorageHashMap  = "storage.hash-map"
-	StoreBoltDBFile = "store.boltdb.file"
+	StorageYamlFile   = "storage.yaml.file"
+	StorageHashMap    = "storage.hash-map"
+	StorageBoltDBFile = "store.boltdb.file"
 )

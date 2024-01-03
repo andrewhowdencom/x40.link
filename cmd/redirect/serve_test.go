@@ -42,13 +42,15 @@ func TestGetStorage(t *testing.T) {
 					panic(err)
 				}
 
-				file.Write([]byte(`
+				if _, err := file.Write([]byte(`
 ---
 - from: //x40/foo
   to: //k3s/bar
 - from: //x40/bar
   to: //k3s/baz
-`))
+`)); err != nil {
+					panic(err)
+				}
 				file.Close()
 			},
 		},
@@ -65,7 +67,7 @@ func TestGetStorage(t *testing.T) {
 			}
 
 			// Replicate the supplied user option.
-			serveFlagSet.Set(tc.fName, tc.fVal)
+			assert.Nil(t, serveFlagSet.Set(tc.fName, tc.fVal))
 
 			_, err := getStorage(serveFlagSet)
 			assert.ErrorIs(t, tc.err, err)
