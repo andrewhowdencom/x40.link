@@ -71,13 +71,20 @@ func benchmark(b *testing.B, str storage.Storer, iter int) {
 			Path: base64.URLEncoding.EncodeToString(bytes),
 		}
 		urls = append(urls, next)
-		str.Put(next, dest)
+
+		if err := str.Put(next, dest); err != nil {
+			b.Log(err)
+			b.FailNow()
+		}
 	}
 
 	// Iterate through the whole list, finding them all. The actual benchmark.
 	b.ResetTimer()
 	for _, u := range urls {
-		str.Get(u)
+		if _, err := str.Get(u); err != nil {
+			b.Log(err)
+			b.FailNow()
+		}
 	}
 }
 
@@ -88,15 +95,19 @@ func race(str storage.Storer) {
 		go func() {
 			// If the number is divisible by 4 (which it should be, 25% of the time) then make it a write operation.
 			if rand.Int()%4 == 0 {
-				str.Put(&url.URL{
+				if err := str.Put(&url.URL{
 					Host: "x40",
 				}, &url.URL{
 					Host: "k3s",
-				})
+				}); err != nil {
+					panic(err)
+				}
 			} else {
-				str.Get(&url.URL{
+				if _, err := str.Get(&url.URL{
 					Host: "x40",
-				})
+				}); err != nil && err != storage.ErrNotFound {
+					panic(err)
+				}
 			}
 		}()
 	}
@@ -161,7 +172,7 @@ func TestComplianceAll(t *testing.T) {
 			assert.ErrorIs(t, err, storage.ErrNotFound)
 
 			// Insert and query a record.
-			str.Put(&url.URL{Host: "x40"}, &url.URL{Host: "andrewhowden.com"})
+			assert.Nil(t, str.Put(&url.URL{Host: "x40"}, &url.URL{Host: "andrewhowden.com"}))
 
 			res, err := str.Get(&url.URL{
 				Host: "x40",

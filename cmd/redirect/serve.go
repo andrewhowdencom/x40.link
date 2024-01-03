@@ -50,15 +50,22 @@ func init() {
 
 	// Allow providing the YAML based storage engine
 	serveFlagSet.StringP(flagStrYAML, "y", "", "Use the supplied source file as a 'yaml storage'")
-	viper.BindPFlag(configuration.StorageYamlFile, serveFlagSet.Lookup(flagStrYAML))
 
 	// Allow providing the in-memory based storage engine
 	serveFlagSet.BoolP(flagStrHashMap, "m", false, "Use in-memory (hashmap) storage")
 	serveFlagSet.Lookup(flagStrHashMap).NoOptDefVal = "true"
-	viper.BindPFlag(configuration.StorageHashMap, serveFlagSet.Lookup(flagStrHashMap))
-
 	serveFlagSet.StringP(flagStrBoltDB, "b", "/usr/local/share/x40/urls.db", "The place to store the URL Database")
-	viper.BindPFlag(configuration.StoreBoltDBFile, serveFlagSet.Lookup(flagStrBoltDB))
+
+	// Bind the flags to the configuration
+	for c, f := range map[string]*pflag.Flag{
+		configuration.StorageYamlFile:   serveFlagSet.Lookup(flagStrYAML),
+		configuration.StorageHashMap:    serveFlagSet.Lookup(flagStrHashMap),
+		configuration.StorageBoltDBFile: serveFlagSet.Lookup(flagStrBoltDB),
+	} {
+		if err := viper.BindPFlag(c, f); err != nil {
+			panic("cannot create flag: " + err.Error())
+		}
+	}
 
 	// Bind the flag set to the command, and ensure it validated.
 	Serve.Flags().AddFlagSet(serveFlagSet)
@@ -130,7 +137,7 @@ func getStorage(flags *pflag.FlagSet) (storage.Storer, error) {
 
 			return y, nil
 		case flagStrBoltDB:
-			db, err := boltdb.New(viper.GetString(configuration.StoreBoltDBFile))
+			db, err := boltdb.New(viper.GetString(configuration.StorageBoltDBFile))
 			if err != nil {
 				return nil, fmt.Errorf("%w: %s", ErrFailedStorageSetup, err)
 			}

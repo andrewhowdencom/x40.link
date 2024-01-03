@@ -127,8 +127,9 @@ func TestLoggerOverride(t *testing.T) {
 		Level: slog.LevelDebug,
 	}))
 
-	// Get an error condition (failed URL)
-	yaml.New(memory.NewHashTable(), bytes.NewBufferString(`
+	// Get an error condition (failed URL). Return values are discarded as they are (implicitly) validated via the
+	// log assertion.
+	_, _ = yaml.New(memory.NewHashTable(), bytes.NewBufferString(`
 - from: "//	/foo"
   to: //k3s/bar
 `))
