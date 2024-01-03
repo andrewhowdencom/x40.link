@@ -173,6 +173,39 @@ python-dateutil = ">=2.8.1"
 dev = ["flake8", "markdown", "twine", "wheel"]
 
 [[package]]
+name = "gitdb"
+version = "4.0.11"
+description = "Git Object Database"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "gitdb-4.0.11-py3-none-any.whl", hash = "sha256:81a3407ddd2ee8df444cbacea00e2d038e40150acfa3001696fe0dcf1d3adfa4"},
+    {file = "gitdb-4.0.11.tar.gz", hash = "sha256:bf5421126136d6d0af55bc1e7c1af1c397a34f5b7bd79e776cd3e89785c2b04b"},
+]
+
+[package.dependencies]
+smmap = ">=3.0.1,<6"
+
+[[package]]
+name = "gitpython"
+version = "3.1.40"
+description = "GitPython is a Python library used to interact with Git repositories"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "GitPython-3.1.40-py3-none-any.whl", hash = "sha256:cf14627d5a8049ffbf49915732e5eddbe8134c3bdb9d476e6182b676fc573f8a"},
+    {file = "GitPython-3.1.40.tar.gz", hash = "sha256:22b126e9ffb671fdd0c129796343a02bf67bf2994b35449ffc9321aa755e18a4"},
+]
+
+[package.dependencies]
+gitdb = ">=4.0.1,<5"
+
+[package.extras]
+test = ["black", "coverage[toml]", "ddt (>=1.1.1,!=1.4.3)", "mock", "mypy", "pre-commit", "pytest", "pytest-cov", "pytest-instafail", "pytest-subtests", "pytest-sugar"]
+
+[[package]]
 name = "idna"
 version = "3.6"
 description = "Internationalized Domain Names in Applications (IDNA)"
@@ -332,6 +365,39 @@ i18n = ["babel (>=2.9.0)"]
 min-versions = ["babel (==2.9.0)", "click (==7.0)", "colorama (==0.4)", "ghp-import (==1.0)", "importlib-metadata (==4.3)", "jinja2 (==2.11.1)", "markdown (==3.2.1)", "markupsafe (==2.0.1)", "mergedeep (==1.3.4)", "packaging (==20.5)", "pathspec (==0.11.1)", "platformdirs (==2.2.0)", "pyyaml (==5.1)", "pyyaml-env-tag (==0.1)", "typing-extensions (==3.10)", "watchdog (==2.0)"]
 
 [[package]]
+name = "mkdocs-git-authors-plugin"
+version = "0.7.2"
+description = "Mkdocs plugin to display git authors of a page"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "mkdocs-git-authors-plugin-0.7.2.tar.gz", hash = "sha256:f541730e4cabdafa0ac758c94d28ba5e8ddca4c859e5de4c89f1226cb6ccd0ad"},
+    {file = "mkdocs_git_authors_plugin-0.7.2-py3-none-any.whl", hash = "sha256:c8a2784a867db79ad3b477a96ee96875d17b09192b6d3be71f08df25afff76c4"},
+]
+
+[package.dependencies]
+mkdocs = ">=1.0"
+
+[[package]]
+name = "mkdocs-git-revision-date-localized-plugin"
+version = "1.2.2"
+description = "Mkdocs plugin that enables displaying the localized date of the last git modification of a markdown file."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "mkdocs-git-revision-date-localized-plugin-1.2.2.tar.gz", hash = "sha256:0c43a9aac1fa69df99a823f833cc223bac9967b60d5261a857761c7c6e3b30de"},
+    {file = "mkdocs_git_revision_date_localized_plugin-1.2.2-py3-none-any.whl", hash = "sha256:85c7fe9ab06e7a63c4e522c26fee8b51d357cb8cbe605064501ad80f4f31cb94"},
+]
+
+[package.dependencies]
+babel = ">=2.7.0"
+GitPython = "*"
+mkdocs = ">=1.0"
+pytz = "*"
+
+[[package]]
 name = "mkdocs-material"
 version = "9.5.3"
 description = "Documentation that simply works"
@@ -473,6 +539,18 @@ files = [
 
 [package.dependencies]
 six = ">=1.5"
+
+[[package]]
+name = "pytz"
+version = "2023.3.post1"
+description = "World timezone definitions, modern and historical"
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pytz-2023.3.post1-py2.py3-none-any.whl", hash = "sha256:ce42d816b81b68506614c11e8937d3aa9e41007ceb50bfdcb0749b921bf646c7"},
+    {file = "pytz-2023.3.post1.tar.gz", hash = "sha256:7b4fddbeb94a1eba4b557da24f19fdf9db575192544270a9101d8509f9f43d7b"},
+]
 
 [[package]]
 name = "pyyaml"
@@ -687,6 +765,18 @@ files = [
 ]
 
 [[package]]
+name = "smmap"
+version = "5.0.1"
+description = "A pure Python implementation of a sliding window memory map manager"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "smmap-5.0.1-py3-none-any.whl", hash = "sha256:e6d8668fa5f93e706934a62d7b4db19c8d9eb8cf2adbb75ef1b675aa332b69da"},
+    {file = "smmap-5.0.1.tar.gz", hash = "sha256:dceeb6c0028fdb6734471eb07c0cd2aae706ccaecab45965ee83f11c8d3b1f62"},
+]
+
+[[package]]
 name = "urllib3"
 version = "2.1.0"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -746,4 +836,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "c4a6d740748008bcb2b425c29dd8242f5b6696a99e7bf9553f23e18cd1549cf6"
+content-hash = "c91fdf91549115517496673a2f819456d066df66fc0bafa5414eac3feb294013"

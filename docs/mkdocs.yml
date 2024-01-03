@@ -1,12 +1,19 @@
 ---
 site_name: "@.link"
 docs_dir: content
+repo_url: https://github.com/andrewhowdencom/x40.link
+edit_uri: edit/main/docs/content/
 theme:
   name: material
   features:
     - content.code.copy
     - navigation.tabs
     - navigation.expand
+    - content.action.edit
+
+plugins:
+  - git-revision-date-localized:
+      fallback_to_build_date: true
 
 markdown_extensions:
   - pymdownx.highlight:
