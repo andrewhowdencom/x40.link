@@ -30,7 +30,7 @@ jobs:
 
       # Generate the documentation
       - name: "Build the documentation artifact"
-        run: task docs-tar
+        run: task docs/tar
 
       # Upload it
       - name: "Upload Artifact"

@@ -7,10 +7,18 @@ env:
   CGO_ENABLED: "0"
 
 tasks:
-  bin-all:
+  bin:
+    desc: "Build a go binary specific to an architecture and operating system"
+    requires:
+      vars: [GOOS, GOARCH]
+    cmds:
+      - mkdir -p "dist/{{ .GOOS }}+{{ .GOARCH }}"
+      - go build -o "dist/{{ .GOOS }}+{{ .GOARCH }}/x40.link{{ exeExt }}"
+
+  bin/all:
     desc: "Builds the go binaries"
     deps:
-      - "bin-clean"
+      - "bin/clean"
     summary: |
       Builds the go binaries
 
@@ -45,15 +53,7 @@ tasks:
           GOOS: "{{ .ITEM.GOOS }}"
           GOARCH: "{{ .ITEM.GOARCH }}"
 
-  bin:
-    desc: "Build a go binary specific to an architecture and operating system"
-    requires:
-      vars: [GOOS, GOARCH]
-    cmds:
-      - mkdir -p "dist/{{ .GOOS }}+{{ .GOARCH }}"
-      - go build -o "dist/{{ .GOOS }}+{{ .GOARCH }}/x40.link{{ exeExt }}"
-
-  bin-clean:
+  bin/clean:
     desc: "Clean the generated artifacts"
     cmds:
       - "rm -rf dist"
@@ -66,23 +66,23 @@ tasks:
       This documentation will then be deployed to x40.app (or similar) so that it can be viewed by people looking
       to reproduce the service.
     dir: "./docs"
-    deps: ["docs-clean", "docs-install"]
+    deps: ["docs/clean", "docs/install"]
     cmds:
       - "poetry run mkdocs build"
 
-  docs-clean:
+  docs/clean:
     desc: "Clean the generated documentation"
     dir: "./docs"
     cmds:
       - "rm -rf docs/content"
 
-  docs-install:
+  docs/install:
     desc: "Install the dependencies required for the documentation"
     dir: "./docs"
     cmds:
       - "poetry install --no-root"
 
-  docs-tar:
+  docs/tar:
     desc: "Package the documentation for release"
     deps: ["docs"]
     cmds:
@@ -94,19 +94,19 @@ tasks:
             -cvf dist/docs.tar.gz \
             .
 
-  docs-view:
+  docs/view:
     desc: "View the documentation on the local machine"
     dir: "./docs"
     cmds:
       - "poetry run mkdocs serve"
 
-  infra-plan:
+  infra/plan:
     desc: "Plan the infrastructure changes, and validate their output"
     dir: "deploy/prod/tf"
     cmds:
       - "tofu plan -out next.planfile"
 
-  infra-apply:
+  infra/apply:
     desc: "Apply previously designed infrastructure changes"
     dir: "deploy/prod/tf"
     cmds:

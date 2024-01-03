@@ -5,7 +5,7 @@ The application can be deployed locally as a compute-local forwarder, similar to
 1. Build the application
 
     ```bash
-    task build
+    task bin/all
     ```
 
 2. Move it to a suitable directory
