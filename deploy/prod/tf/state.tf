@@ -50,11 +50,11 @@ resource "google_kms_crypto_key" "terraform_state_bucket" {
 
 # Create the state bucket
 resource "google_storage_bucket" "infrastructure-state" {
-  name = "andrewhowdencom-infrastructure-state"
-  force_destroy =  "false"
-  location = "europe-west3"
+  name          = "andrewhowdencom-infrastructure-state"
+  force_destroy = "false"
+  location      = "europe-west3"
   storage_class = "STANDARD"
-  
+
   versioning {
     enabled = true
   }
