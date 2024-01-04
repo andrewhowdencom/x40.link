@@ -26,13 +26,17 @@ The following are programmed in:
 
 The following are the tools used to build, deploy, maintain, code etc.
 
-| Tool     | Purpose                                                                                                  |
-|:---------|:---------------------------------------------------------------------------------------------------------|
-| [poetry] | Manage dependencies & virtual environments in Python                                                     |
-| [task]   | Run defined tasks                                                                                        |
-| [tar]    | Compress directories into archives                                                                       |
-| [tofu]   | Deploy infrastructure as code                                                                            |
+| Tool       | Purpose                                                                                                |
+|:---------- |:-------------------------------------------------------------------------------------------------------|
+| [hadolint] | Lint the Dockerfile                                                                                    |
+| [podman]   | Build containers                                                                                       |
+| [poetry]   | Manage dependencies & virtual environments in Python                                                   |
+| [task]     | Run defined tasks                                                                                      |
+| [tar]      | Compress directories into archives                                                                     |
+| [tofu]     | Deploy infrastructure as code                                                                          |
 
+[handolint]: https://github.com/hadolint/hadolint
+[podman]: https://podman.io/
 [poetry]: https://python-poetry.org/
 [task]: https://taskfile.dev/
 [tar]: https://www.gnu.org/software/tar/

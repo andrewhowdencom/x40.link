@@ -37,7 +37,7 @@ var (
 	serveFlagSet = &pflag.FlagSet{}
 )
 
-var strFlags = []string{flagStrHashMap, flagStrYAML}
+var strFlags = []string{flagStrHashMap, flagStrYAML, flagStrBoltDB}
 
 // Serve starts the HTTP server that will redirect a given HTTP request to a destination.
 var Serve = &cobra.Command{
