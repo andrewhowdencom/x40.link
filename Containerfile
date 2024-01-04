@@ -32,8 +32,7 @@ RUN task bin
 # Ignore the image pinning requirement — distroless is essentialy empty.
 # hadolint ignore=DL3007
 FROM gcr.io/distroless/static:latest AS run
-
-# For the standard OCI Labels
+ARG GOARCH="amd64"
 
 # The standard OCI Labels. See:
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md

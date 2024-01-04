@@ -1,0 +1,79 @@
+---
+name: "build:x40.link"
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build:
+    # The machine type on which the workload is running
+    # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#choosing-github-hosted-runners
+    #
+    # These machines come with podman pre-installed
+    # See https://github.com/redhat-actions/podman-login?tab=readme-ov-file#podman-login
+    runs-on: ubuntu-22.04
+
+    permissions:
+      contents: read
+      # Push images to GitHub
+      # See https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
+      packages: write
+
+      # Authenticate via Google Cloud
+      # See https://github.com/google-github-actions/auth
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # See https://github.com/redhat-actions/podman-login
+      - name: Log in to ghcr.io
+        uses: redhat-actions/podman-login@v1
+        with:
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+          registry: ghcr.io/${{ github.repository_owner }}
+
+      - uses: 'google-github-actions/auth@v2'
+        with:
+          project_id: andrewhowdencom
+          workload_identity_provider: projects/422614898574/locations/global/workloadIdentityPools/github--production/providers/github
+          service_account: github-actions-at-x40-link@andrewhowdencom.iam.gserviceaccount.com
+
+      - name: "Ask Google Cloud to authenticate podman (or Docker)"
+        run: gcloud auth configure-docker europe-west3-docker.pkg.dev
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Install Task
+        uses: arduino/setup-task@v1
+
+      - name: Build the image
+        run: task container/all
+
+
+
+  # # Deploy the compiled docs
+  # deploy:
+  #   needs: build
+
+  #   # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+  #   # See https://github.com/actions/deploy-pages
+  #   permissions:
+  #     pages: write
+  #     id-token: write
+
+  #   environment:
+  #     name: github-pages
+  #     url: ${{ steps.deployment.outputs.page_url }}
+
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - name: "Deploy to GitHub pages"
+  #       uses: actions/deploy-pages@v4
+  #       with:
+  #         artifact_name: docs+${{ github.sha }}
