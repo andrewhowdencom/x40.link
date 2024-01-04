@@ -1,15 +1,22 @@
 # Use the Google Cloud provider as configured below
 terraform {
   backend "gcs" {
-   bucket  = "andrewhowdencom-infrastructure-state"
-   prefix  = "terraform/state"
- }
+    bucket = "andrewhowdencom-infrastructure-state"
+    prefix = "terraform/state"
+  }
+
+  required_providers {
+    google = {
+      source  = "hashicorp/google-beta"
+      version = "~> 5.10.0 "
+    }
+  }
 }
 
 provider "google" {
-    project = "andrewhowdencom"
-    region = "europe-west3"
-    zone = "europe-west3-b"
+  project = "andrewhowdencom"
+  region  = "europe-west3"
+  zone    = "europe-west3-b"
 }
 
 // Setup up resources that allow the storage bucket to be encrypted at rest. See:
@@ -55,5 +62,5 @@ resource "google_storage_bucket" "infrastructure-state" {
   depends_on = [
     google_project_iam_member.default
   ]
- }
+}
 

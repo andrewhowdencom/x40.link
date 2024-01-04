@@ -62,15 +62,40 @@ tasks:
     cmds:
       - "rm -rf dist"
 
+  container/all:
+    desc: "Build and push containers to all registries"
+    cmds:
+      - for: 
+        - REGISTRY: "europe-west3-docker.pkg.dev/andrewhowdencom/x40-link"
+        - REGISTRY: "ghcr.io/andrewhowdencom"
+        task: "container"
+        vars:
+          REGISTRY: "{{ .ITEM.REGISTRY }}"
+
   container:
+    desc: "Build and push a container to a registry"
+    cmds:
+      - task: "container/build"
+        vars: { "REGISTRY": "{{ .REGISTRY }}"}
+      - task: "container/push"
+        vars: { "REGISTRY": "{{ .REGISTRY }}"}
+
+  container/build:
     desc: "Build the container for the application"
     cmds:
       - |
         podman build \
           --build-arg VERSION="{{ .GIT_REFSPEC }}" \
           --build-arg CREATED='{{now | date "2006-01-02T15:04:05Z07:00"}}' \
-          --tag x40.link:{{ .GIT_REFSPEC }} \
+          --tag {{ .REGISTRY | default "localhost" }}/x40.link:{{ .GIT_REFSPEC }} \
           .
+
+  container/push:
+    desc: "Push the container"
+    requires:
+      vars: ["REGISTRY"]
+    cmds:
+      - "podman push {{ .REGISTRY }}/x40.link:{{ .GIT_REFSPEC }}"
 
   docs:
     desc: "Build the static HTML for the documentation"
