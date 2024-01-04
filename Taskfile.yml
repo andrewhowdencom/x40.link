@@ -6,6 +6,10 @@ env:
   # Disable calls to CGO, so that the binaries compiled are static.
   CGO_ENABLED: "0"
 
+vars:
+  GIT_REFSPEC:
+    sh: "git rev-parse --short HEAD"
+
 tasks:
   bin:
     desc: "Build a go binary specific to an architecture and operating system"
@@ -57,6 +61,16 @@ tasks:
     desc: "Clean the generated artifacts"
     cmds:
       - "rm -rf dist"
+
+  container:
+    desc: "Build the container for the application"
+    cmds:
+      - |
+        podman build \
+          --build-arg VERSION="{{ .GIT_REFSPEC }}" \
+          --build-arg CREATED='{{now | date "2006-01-02T15:04:05Z07:00"}}' \
+          --tag x40.link:{{ .GIT_REFSPEC }} \
+          .
 
   docs:
     desc: "Build the static HTML for the documentation"
@@ -119,6 +133,10 @@ tasks:
   lint:
     desc: "Validate the code against common standards"
     cmds:
+      # Containers
+      - hadolint Containerfile
+
+      # Golang
       - golangci-lint run ./...
 
   test:
