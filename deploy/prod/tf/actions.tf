@@ -10,9 +10,16 @@ resource "google_service_account" "x40-link__github-actions" {
   display_name = "GitHub Actions @ andrewhowdencom/x40.link"
 }
 
-resource "google_project_iam_member" "x40-link__github-actions" {
+resource "google_project_iam_member" "x40-link__github-actions__artifact-registry" {
   project = "andrewhowdencom"
   role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${google_service_account.x40-link__github-actions.email}"
+}
+
+
+resource "google_project_iam_member" "x40-link__github-actions__cloud-run" {
+  project = "andrewhowdencom"
+  role    = "roles/run.admin"
   member  = "serviceAccount:${google_service_account.x40-link__github-actions.email}"
 }
 
@@ -40,4 +47,14 @@ resource "google_service_account_iam_member" "x40-link__github-actions" {
   service_account_id = google_service_account.x40-link__github-actions.name
   role               = "roles/iam.workloadIdentityUser"
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github__production.name}/attribute.repository/andrewhowdencom/x40.link"
+}
+
+# Allow the general compute user to assume service accounts.
+resource "google_service_account_iam_binding" "x40-link__github-actions" {
+  service_account_id = "${data.google_project.project.id}/serviceAccounts/${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  role               = "roles/iam.serviceAccountUser"
+
+  members = [
+    "serviceAccount:${google_service_account.x40-link__github-actions.email}"
+  ]
 }

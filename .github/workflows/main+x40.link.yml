@@ -6,13 +6,18 @@ on:
     branches: ["main"]
 
 jobs:
-  build:
+  release:
     # The machine type on which the workload is running
     # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#choosing-github-hosted-runners
     #
     # These machines come with podman pre-installed
     # See https://github.com/redhat-actions/podman-login?tab=readme-ov-file#podman-login
     runs-on: ubuntu-22.04
+
+    # The environment to which main is deployed
+    environment:
+      name: Production
+      url: https://x40.link/
 
     permissions:
       contents: read
@@ -41,6 +46,7 @@ jobs:
               - 'go.sum'
               - 'Containerfile'
               - '.github/workflows/main+x40.link.yml'
+              - 'deploy/prod/cr/*'
 
       - name: "(Optionally) Cancel the build"
         if: ${{ steps.filter.outputs.artifact == 'false' }}
@@ -77,7 +83,8 @@ jobs:
       - name: Install Task
         uses: arduino/setup-task@v1
 
-      - name: Build the image
+      - name: Build
         run: task container/all
 
-
+      - name: Release
+        run: task cloudrun/apply
