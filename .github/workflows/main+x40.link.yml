@@ -27,6 +27,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Exit if there are no code changes
+        run: |
+          # Determine if there are any changes
+          git diff HEAD~1..HEAD --name-only | grep -E "Containerfile|.go" \
+              || {
+                  gh run cancel ${{ github.run_id }};
+                  gh run watch ${{ github.run_id }};
+              }
+
+          # If the watch (somehow) fails, kill the pipeline here anyway as failed.
+          exit 1
       # See https://github.com/redhat-actions/podman-login
       - name: Log in to ghcr.io
         uses: redhat-actions/podman-login@v1

@@ -12,6 +12,21 @@ jobs:
     # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#choosing-github-hosted-runners
     runs-on: ubuntu-22.04
     steps:
+      - name: Checkout the main branch
+        uses: actions/checkout@v4
+
+      - name: Exit if there are no docs changes
+        run: |
+          # Determine if there are any changes
+          git diff HEAD~1..HEAD --name-only | grep docs \
+              || {
+                  gh run cancel ${{ github.run_id }};
+                  gh run watch ${{ github.run_id }};
+              }
+
+          # If the watch (somehow) fails, kill the pipeline here anyway as failed.
+          exit 1
+
       # Setup Python (& Dependencies)
       - name: "Setup Python"
         uses: actions/setup-python@v5
@@ -24,9 +39,6 @@ jobs:
       # Install the Task Runner
       - name: Install Task
         uses: arduino/setup-task@v1
-
-      - name: Checkout the main branch
-        uses: actions/checkout@v4
 
       # Generate the documentation
       - name: "Build the documentation artifact"
