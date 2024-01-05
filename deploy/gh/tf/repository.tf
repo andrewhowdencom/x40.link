@@ -7,9 +7,12 @@ resource "github_repository" "x40-link" {
 
   description = "The codebase powering @.link"
 
+  # Used for multiple commits
   allow_merge_commit = true
   allow_rebase_merge = false
-  allow_squash_merge = false
+
+  # Used for single commit
+  allow_squash_merge = true
 
   has_downloads = true
   has_issues    = true
