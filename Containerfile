@@ -52,8 +52,10 @@ LABEL "org.opencontainers.image.title"="x40.link" \
     org.opencontainers.image.licenses="AGPL"
 
 
+
 ENV GOOS="linux"
 
 COPY --from=build /mnt/dist/linux+${GOARCH}/x40.link /usr/bin/x40.link
+COPY etc/urls.yaml /urls.yaml
 
-CMD ["/usr/bin/x40.link", "redirect", "serve", "--with-boltdb", "/tmp/urls.db"]
+CMD ["/usr/bin/x40.link", "redirect", "serve", "--with-yaml", "/urls.yaml"]

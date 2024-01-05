@@ -59,6 +59,8 @@ func New(str storage.Storer, src io.Reader) (*yaml, error) {
 			continue
 		}
 
+		fmt.Println(from.String(), to.String())
+
 		if err := y.str.Put(from, to); err != nil {
 			return nil, fmt.Errorf("%w: %s", storage.ErrStorageSetupFailed, err)
 		}
