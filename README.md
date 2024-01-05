@@ -51,6 +51,12 @@ using the [Tofu](https://opentofu.org/) (or open-source Terraform implementation
 [create DNS records](https://github.com/andrewhowdencom/x40.link/blob/main/deploy/prod/tf/dns.tf). See how it is
 [configured to store its state in Google Cloud.](https://github.com/andrewhowdencom/x40.link/blob/main/deploy/prod/tf/state.tf)
 
+You can also see how we pack the application [into a container](https://github.com/andrewhowdencom/x40.link/blob/main/Containerfile)
+using a multi-step build [via the open-source Podman application](https://github.com/andrewhowdencom/x40.link/blob/main/Taskfile.yml#L75-L98).
+This is built every time we
+[merge to main](https://github.com/andrewhowdencom/x40.link/blob/main/.github/workflows/main%2Bx40.link.yml) and store both
+in [GitHub](https://github.com/andrewhowdencom?tab=packages&repo_name=x40.link) and Google Cloud.
+
 You can check the infrastructure by visiting the managed domains with:
 
 * **docs**: https://x40.dev
@@ -88,11 +94,9 @@ You can learn more on [the go website](https://go.dev/blog/examples). Some tests
 
 Quite a bit of work remains in this project before it becomes "production-ready!" For example,
 
-1. The definition of the project as a container
-3. The configuration of a public cloud (e.g., Terraform)
-4. Observability instrumentation (e.g., logs, metrics, traces, profiling)
-5. Data Backups (e.g. Scheduled, Commit Logs and so on)
-6. Service Level Management (e.g., SLOs, SLAs)
+1. Observability instrumentation (e.g., logs, metrics, traces, profiling)
+1. Data Backups (e.g. Scheduled, Commit Logs and so on)
+1. Service Level Management (e.g., SLOs, SLAs)
 
 I have worked with all of these technologies before; however, I have only a limited number of daily hours! Perhaps
 you can [email me](mailto:hello@andrewhowden.com), and I can help you find evidence of what you're looking for.
