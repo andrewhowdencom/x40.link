@@ -7,9 +7,9 @@ resource "github_repository" "x40-link" {
 
   description = "The codebase powering @.link"
 
-  allow_merge_commit = false
+  allow_merge_commit = true
   allow_rebase_merge = false
-  allow_squash_merge = true
+  allow_squash_merge = false
 
   has_downloads = true
   has_issues    = true

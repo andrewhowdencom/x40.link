@@ -16,6 +16,10 @@ jobs:
 
     permissions:
       contents: read
+
+      # Needed to cancel the build
+      actions: write
+
       # Push images to GitHub
       # See https://docs.github.com/en/actions/publishing-packages/publishing-docker-images
       packages: write
@@ -27,17 +31,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Exit if there are no code changes
-        run: |
-          # Determine if there are any changes
-          git diff HEAD~1..HEAD --name-only | grep -E "Containerfile|.go" \
-              || {
-                  gh run cancel ${{ github.run_id }};
-                  gh run watch ${{ github.run_id }};
-              }
+      - uses: dorny/paths-filter@v2.2.1
+        id: filter
+        with:
+          filters: |
+            artifact:
+              - '**/*.go'
+              - 'go.mod'
+              - 'go.sum'
+              - 'Containerfile'
+              - '.github/workflows/main+x40.link.yml'
 
-          # If the watch (somehow) fails, kill the pipeline here anyway as failed.
-          exit 1
+      - name: "(Optionally) Cancel the build"
+        if: ${{ steps.filter.outputs.artifact == 'false' }}
+
+        # Wait required, as this pauses the build until its cancelled.
+        run: |
+          gh run cancel ${{ github.run_id }}
+          gh run watch ${{ github.run_id }}
+
       # See https://github.com/redhat-actions/podman-login
       - name: Log in to ghcr.io
         uses: redhat-actions/podman-login@v1
@@ -67,24 +79,3 @@ jobs:
         run: task container/all
 
 
-
-  # # Deploy the compiled docs
-  # deploy:
-  #   needs: build
-
-  #   # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
-  #   # See https://github.com/actions/deploy-pages
-  #   permissions:
-  #     pages: write
-  #     id-token: write
-
-  #   environment:
-  #     name: github-pages
-  #     url: ${{ steps.deployment.outputs.page_url }}
-
-  #   runs-on: ubuntu-22.04
-  #   steps:
-  #     - name: "Deploy to GitHub pages"
-  #       uses: actions/deploy-pages@v4
-  #       with:
-  #         artifact_name: docs+${{ github.sha }}
