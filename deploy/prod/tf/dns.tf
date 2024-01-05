@@ -12,6 +12,12 @@ resource "google_dns_managed_zone" "x40-dev" {
   description = "The developer documentation for the x40 project."
 }
 
+resource "google_dns_managed_zone" "h4n-me" {
+  name        = "h4n-me"
+  dns_name    = "h4n.me."
+  description = "A short domain for 'Howden'"
+}
+
 resource "google_dns_record_set" "x40-dev__ALIAS" {
   managed_zone = google_dns_managed_zone.x40-dev.name
   name         = google_dns_managed_zone.x40-dev.dns_name
