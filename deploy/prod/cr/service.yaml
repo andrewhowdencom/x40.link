@@ -1,0 +1,21 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata: 
+  name: "x40-link"
+  labels:
+    cloud.googleapis.com/location: "europe-west3"
+  annotations:
+    run.googleapis.com/description: "@.link service. See https://x40.dev"
+    run.googleapis.com/ingress: internal-and-cloud-load-balancing
+spec:
+  template:
+    metadata:
+      labels:
+        run.googleapis.com/startupProbeType: Default
+      annotations:
+        autoscaling.knative.dev/maxScale: '3'
+    spec:
+      containerConcurrency: 1000
+      timeoutSeconds: 1
+      containers:
+        - image: europe-west3-docker.pkg.dev/andrewhowdencom/x40-link/x40.link:$VERSION

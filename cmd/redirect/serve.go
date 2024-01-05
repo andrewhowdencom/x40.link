@@ -81,6 +81,12 @@ func RunServe(cmd *cobra.Command, args []string) error {
 
 	// Stub implementation to validate runtime constraints.
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		// Sample Request
+		if r.URL.Path == "/check" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
 		// TODO: Figure out a saner way to do this
 		url := &url.URL{
 			// There's no support for anything else at this time
@@ -103,7 +109,7 @@ func RunServe(cmd *cobra.Command, args []string) error {
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	})
 
-	return http.ListenAndServe("localhost:80", http.DefaultServeMux)
+	return http.ListenAndServe("0.0.0.0:8080", http.DefaultServeMux)
 }
 
 // getStorage fetches the appropriate storage for the supplied configuration. Assumes that at least one configuration
