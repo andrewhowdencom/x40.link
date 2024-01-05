@@ -51,7 +51,7 @@ resource "github_repository_ruleset" "x40-link" {
   enforcement = "active"
 
   rules {
-    required_linear_history = true
+    required_linear_history = false
     required_signatures     = true
 
     pull_request {
