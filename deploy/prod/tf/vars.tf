@@ -4,8 +4,8 @@ variable "x40_link_domains" {
 }
 
 variable "h4n_me_domains" {
-    type = list(string)
-    default = ["h4n.me", "www.h4n.me"]
+  type    = list(string)
+  default = ["h4n.me", "www.h4n.me"]
 }
 
 variable "cloud-run__x40-link" {
