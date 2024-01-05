@@ -6,6 +6,7 @@ package redirect
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -90,10 +91,13 @@ func RunServe(cmd *cobra.Command, args []string) error {
 		// TODO: Figure out a saner way to do this
 		url := &url.URL{
 			// There's no support for anything else at this time
-			Scheme: "http",
-			Host:   r.Host,
-			Path:   r.URL.Path,
+			Host: r.Host,
+			Path: r.URL.Path,
 		}
+
+		// Temporary for debugging in production
+		log.Println(url.String())
+
 		ret, err := str.Get(url)
 
 		// Iterate though the potential failure modes.
@@ -109,7 +113,7 @@ func RunServe(cmd *cobra.Command, args []string) error {
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	})
 
-	return http.ListenAndServe("0.0.0.0:8080", http.DefaultServeMux)
+	return http.ListenAndServe("0.0.0.0:80", http.DefaultServeMux)
 }
 
 // getStorage fetches the appropriate storage for the supplied configuration. Assumes that at least one configuration
