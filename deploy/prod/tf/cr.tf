@@ -121,6 +121,31 @@ resource "google_compute_global_forwarding_rule" "x40-link" {
 
 }
 
+# HTTP to HTTPS redirect(s)
+resource "google_compute_url_map" "http-to-https" {
+  name = "http-to-https"
+
+  default_url_redirect {
+    https_redirect         = true
+    redirect_response_code = "MOVED_PERMANENTLY_DEFAULT"
+    strip_query            = false
+  }
+}
+
+resource "google_compute_target_http_proxy" "http-to-https" {
+  name    = "http-to-https"
+  url_map = google_compute_url_map.http-to-https.id
+}
+
+resource "google_compute_global_forwarding_rule" "http-to-https" {
+  name                  = "http-to-https"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  ip_address            = google_compute_global_address.x40-link.id
+  target                = google_compute_target_http_proxy.http-to-https.id
+  port_range            = "80"
+}
+
+
 # Public access to the service
 # Allow the general compute user to assume service accounts.
 resource "google_cloud_run_service_iam_binding" "default" {
