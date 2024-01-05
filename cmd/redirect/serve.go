@@ -113,7 +113,7 @@ func RunServe(cmd *cobra.Command, args []string) error {
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	})
 
-	return http.ListenAndServe("0.0.0.0:80", http.DefaultServeMux)
+	return http.ListenAndServe("0.0.0.0:8080", http.DefaultServeMux)
 }
 
 // getStorage fetches the appropriate storage for the supplied configuration. Assumes that at least one configuration

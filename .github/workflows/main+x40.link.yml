@@ -16,7 +16,7 @@ jobs:
 
     # The environment to which main is deployed
     environment:
-      name: Production
+      name: x40-link
       url: https://x40.link/
 
     permissions:
