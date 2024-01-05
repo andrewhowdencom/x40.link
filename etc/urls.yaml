@@ -1,7 +1,19 @@
+# The top level domains
+- from: //x40.link/
+  to: https://www.x40.dev/
+
+- from: //h4n.me/
+  to: https://www.andrewhowden.com/
+
+# Legacy stuff from h4n.link
+## The new link shortener
 - from: //h4n.me/x40
   to: https://github.com/andrewhowdencom/x40.link
+
+## Out of Work
 - from: //h4n.me/otw
   to: https://www.linkedin.com/search/results/content/?fromMember=%5B%22ACoAABVsuvoBKFVsg2etxx65bIERnhO4OzlUzLc%22%5D&keywords=%23OpenToWork+%23CaseStudy&sortBy=%22date_posted%22
+
 - from: //h4n.me/87J1
   to: https://github.com/andrewhowdencom/s3k.link?tab=readme-ov-file#s3klink
 - from: //h4n.me/jobs
