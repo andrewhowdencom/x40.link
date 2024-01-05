@@ -8,6 +8,11 @@ on:
 jobs:
   # Build the docs
   build:
+
+    permissions:
+      # Needed to cancel the build
+      actions: write
+
     # The machine type on which the workload is running
     # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#choosing-github-hosted-runners
     runs-on: ubuntu-22.04
@@ -15,17 +20,20 @@ jobs:
       - name: Checkout the main branch
         uses: actions/checkout@v4
 
-      - name: Exit if there are no docs changes
-        run: |
-          # Determine if there are any changes
-          git diff HEAD~1..HEAD --name-only | grep docs \
-              || {
-                  gh run cancel ${{ github.run_id }};
-                  gh run watch ${{ github.run_id }};
-              }
+      - uses: dorny/paths-filter@v2.2.1
+        id: filter
+        with:
+          filters: |
+            docs:
+              - docs/*
 
-          # If the watch (somehow) fails, kill the pipeline here anyway as failed.
-          exit 1
+      - name: "(Optionally) Cancel the build"
+        if: ${{ steps.filter.outputs.docs == 'false' }}
+
+        # Wait required, as this pauses the build until its cancelled.
+        run: |
+          gh run cancel ${{ github.run_id }}
+          gh run watch ${{ github.run_id }}
 
       # Setup Python (& Dependencies)
       - name: "Setup Python"
