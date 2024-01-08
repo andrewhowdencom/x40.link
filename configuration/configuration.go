@@ -6,4 +6,7 @@ const (
 	StorageYamlFile   = "storage.yaml.file"
 	StorageHashMap    = "storage.hash-map"
 	StorageBoltDBFile = "store.boltdb.file"
+
+	// Server* is configuration that modifies how the server is run
+	ServerListenAddress = "server.listen-address"
 )

@@ -26,6 +26,8 @@ const (
 	flagStrHashMap = "with-hash-map"
 	flagStrYAML    = "with-yaml"
 	flagStrBoltDB  = "with-boltdb"
+
+	flagStrListenAddress = "listen-address"
 )
 
 // Sentinal errors
@@ -38,7 +40,7 @@ var (
 	serveFlagSet = &pflag.FlagSet{}
 )
 
-var strFlags = []string{flagStrHashMap, flagStrYAML, flagStrBoltDB}
+var storageFlags = []string{flagStrHashMap, flagStrYAML, flagStrBoltDB}
 
 // Serve starts the HTTP server that will redirect a given HTTP request to a destination.
 var Serve = &cobra.Command{
@@ -48,6 +50,8 @@ var Serve = &cobra.Command{
 }
 
 func init() {
+	// Specify the address on which to listen
+	serveFlagSet.StringP(flagStrListenAddress, "l", "localhost:80", "The address on which to listen to incoming requests")
 
 	// Allow providing the YAML based storage engine
 	serveFlagSet.StringP(flagStrYAML, "y", "", "Use the supplied source file as a 'yaml storage'")
@@ -55,6 +59,8 @@ func init() {
 	// Allow providing the in-memory based storage engine
 	serveFlagSet.BoolP(flagStrHashMap, "m", false, "Use in-memory (hashmap) storage")
 	serveFlagSet.Lookup(flagStrHashMap).NoOptDefVal = "true"
+
+	// Allow using a file backed storage
 	serveFlagSet.StringP(flagStrBoltDB, "b", "/usr/local/share/x40/urls.db", "The place to store the URL Database")
 
 	// Bind the flags to the configuration
@@ -62,6 +68,8 @@ func init() {
 		configuration.StorageYamlFile:   serveFlagSet.Lookup(flagStrYAML),
 		configuration.StorageHashMap:    serveFlagSet.Lookup(flagStrHashMap),
 		configuration.StorageBoltDBFile: serveFlagSet.Lookup(flagStrBoltDB),
+
+		configuration.ServerListenAddress: serveFlagSet.Lookup(flagStrListenAddress),
 	} {
 		if err := viper.BindPFlag(c, f); err != nil {
 			panic("cannot create flag: " + err.Error())
@@ -70,8 +78,8 @@ func init() {
 
 	// Bind the flag set to the command, and ensure it validated.
 	Serve.Flags().AddFlagSet(serveFlagSet)
-	Serve.MarkFlagsOneRequired(strFlags...)
-	Serve.MarkFlagsMutuallyExclusive(strFlags...)
+	Serve.MarkFlagsOneRequired(storageFlags...)
+	Serve.MarkFlagsMutuallyExclusive(storageFlags...)
 }
 
 func RunServe(cmd *cobra.Command, args []string) error {
@@ -113,14 +121,14 @@ func RunServe(cmd *cobra.Command, args []string) error {
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	})
 
-	return http.ListenAndServe("0.0.0.0:8080", http.DefaultServeMux)
+	return http.ListenAndServe(viper.GetString(configuration.ServerListenAddress), http.DefaultServeMux)
 }
 
 // getStorage fetches the appropriate storage for the supplied configuration. Assumes that at least one configuration
 // is passed (enforced by MarkFlagsOneRequired)
 func getStorage(flags *pflag.FlagSet) (storage.Storer, error) {
 	var str storage.Storer
-	for _, f := range strFlags {
+	for _, f := range storageFlags {
 		if !flags.Lookup(f).Changed {
 			continue
 		}
