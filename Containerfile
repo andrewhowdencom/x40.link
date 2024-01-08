@@ -58,4 +58,4 @@ ENV GOOS="linux"
 COPY --from=build /mnt/dist/linux+${GOARCH}/x40.link /usr/bin/x40.link
 COPY etc/urls.yaml /urls.yaml
 
-CMD ["/usr/bin/x40.link", "redirect", "serve", "--with-yaml", "/urls.yaml"]
+CMD ["/usr/bin/x40.link", "redirect", "serve", "--with-yaml", "/urls.yaml", "--listen-address", "0.0.0.0:80"]
