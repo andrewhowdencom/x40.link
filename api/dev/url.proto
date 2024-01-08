@@ -1,0 +1,68 @@
+// 
+// TODO: Document API Guarantees and versions
+// dev, alpha, beta, v1, v${N}
+syntax = "proto3";
+package x40.dev.url;
+option go_package = "github.com/andrewhowdencom/x40/api/dev/url";
+
+import "google/api/annotations.proto";
+
+
+message QueryParam {
+    string Key = 1;
+    string Value = 2;
+}
+
+// URL is an expression of a URL, broken down into its constituent components. Heavily influenced by net/url from
+// the Go standard library.
+message URL {
+    // No reserved fields yet.
+
+    // What protocol. For example, http://
+    string Scheme = 1;
+
+    // The host (or host:port) combination. For example, x40.localhost:8080
+    string Host = 2;
+
+    // The path for the URL. For example, /self
+    string Path = 3;
+
+    // The query parameters supplied. For example, ?foo=bar → foo": "bar"
+    repeated QueryParam Query = 4;
+
+    // The part of the URL after the fragment. For example, #bar
+    string Fragment = 5;
+}
+
+// PutURLRequest allows 
+// TODO: Figure out if this makes sense for others; for example, whether we want to return data like
+// "who owns this".
+message PutURLRequest {
+    URL From = 1;
+    URL to = 2;
+}
+
+message PutURLResponse {
+}
+
+service ManageURLs {
+    // Get queries a URL, returning the URL if there was found (or none, if it was not found)
+    rpc Get(URL) returns (URL) {
+        option (google.api.http) = {
+            get: "/dev/url"
+        };
+    }
+
+    // Post generates a new URL with a generated suffix.
+    rpc Post(URL) returns (URL) {
+        option (google.api.http) = {
+            post: "/dev/url"
+        };
+    }
+
+    rpc Put(PutURLRequest) returns (PutURLResponse) {
+        option (google.api.http) = {
+            put: "/dev/url"
+        };
+    }
+}
