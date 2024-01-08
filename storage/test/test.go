@@ -20,7 +20,10 @@ type ts struct {
 
 // New generates the test storage implementation
 func New(opts ...Option) *ts {
-	n := &ts{}
+
+	n := &ts{
+		r: make(map[string]*url.URL),
+	}
 
 	for _, o := range opts {
 		o(n)
@@ -58,4 +61,11 @@ func (ts *ts) Put(f *url.URL, t *url.URL) error {
 
 	ts.r[f.String()] = t
 	return nil
+}
+
+// Must is a utility that can be used to wrap Put and Get, within bootstrap functions.
+func Must(err error) {
+	if err != nil {
+		panic(err)
+	}
 }
