@@ -25,7 +25,7 @@ jobs:
         with:
           filters: |
             docs:
-              - docs/*
+              - docs/**
 
       - name: "(Optionally) Cancel the build"
         if: ${{ steps.filter.outputs.docs == 'false' }}

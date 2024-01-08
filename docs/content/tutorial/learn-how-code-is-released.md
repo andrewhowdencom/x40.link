@@ -8,12 +8,12 @@ This guide expects you to have submitted code to a repository before and only ca
 unique to this project.
 
 !!! warning "Infrastructure changes do not follow this flow."
-    While the maintaining developers checked all 
-    [infrastructure definitions](https://github.com/andrewhowdencom/x40.link/tree/main/deploy/prod/tf) 
-    into version control, they have not written a CI/CD pipeline that releases them to production. 
-    The reason for this is practical — these definitions require extensive access to the Google Cloud account, which 
+    While the maintaining developers checked all
+    [infrastructure definitions](https://github.com/andrewhowdencom/x40.link/tree/main/deploy/prod/tf)
+    into version control, they have not written a CI/CD pipeline that releases them to production.
+    The reason for this is practical — these definitions require extensive access to the Google Cloud account, which
     would open the risk of someone stealing credentials to this account and running other (expensive) workloads
-    within it (e.g., Bitcoin mining)    
+    within it (e.g., Bitcoin mining)
 
 ## Make a change
 
@@ -22,7 +22,8 @@ into your account. Once done, you must
 [clone the repository onto your workstation](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository).
 Then, edit the files as you see fit!
 
-So we can understand, we'll look at [a commit that adds a new flag to specify the server listen address](TODO): 
+So we can understand, we'll look at
+[a commit that adds a new flag to specify the server listen address](https://github.com/andrewhowdencom/x40.link/commit/980057a1c2b96af21a5d2fbf076f271e8e3475dc):
 
 ```bash
 # Create a new branch on your fork.
@@ -40,15 +41,15 @@ git diff
 # +
 # +       flagStrListenAddress = "listen-address"
 #  )
- 
+
 #  // Sentinal errors
 # @@ -38,7 +40,7 @@ var (
 #         serveFlagSet = &pflag.FlagSet{}
 #  )
- 
+
 # -var strFlags = []string{flagStrHashMap, flagStrYAML, flagStrBoltDB}
 # +var storageFlags = []string{flagStrHashMap, flagStrYAML, flagStrBoltDB}
-# 
+#
 # ... (Omitted for brevity)
 ```
 
@@ -61,18 +62,18 @@ This project has a couple of unique requirements:
 1. [Contributors must sign all commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)
 2. [Contributors must write context in the commit](https://medium.com/@andrewhowdencom/anatomy-of-a-good-commit-message-acd9c4490437)
 
-Before this tutorial, you must set up 
-[a GPG keypair](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key), 
+Before this tutorial, you must set up
+[a GPG keypair](https://docs.github.com/en/authentication/managing-commit-signature-verification/generating-a-new-gpg-key),
 [tell Git about that key pair](https://docs.github.com/en/authentication/managing-commit-signature-verification/telling-git-about-your-signing-key)
-on your workstation, and 
+on your workstation, and
 [tell GitHub which public keys are yours](https://docs.github.com/en/authentication/managing-commit-signature-verification/adding-a-gpg-key-to-your-github-account).
 Beyond that, creating an appropriate commit message requires an additional couple of flags than you might otherwise be used to:
 
-```bash 
+```bash
 # Add the changed files.
 git add cmd configuration
 
-# Using the heredoc syntax to show the command but also the message. 
+# Using the heredoc syntax to show the command but also the message.
 # You can just use Vim or Nano or so.
 #
 # The flags that you need to know are:
@@ -130,11 +131,11 @@ $ git verify-commit HEAD
 ```
 
 The commit itself includes information about **why the author changed the content**. This context is critical over
-the months and years of software development. Maintainers need to understand why a particular bit of code they 
-introduced — especially if maintainers introduced that code d to address a bug or if there are shortfalls to the 
+the months and years of software development. Maintainers need to understand why a particular bit of code they
+introduced — especially if maintainers introduced that code d to address a bug or if there are shortfalls to the
 implementation (such as the lack of tests in this patch)
 
-You can learn more about what constitutes a Good Commit 
+You can learn more about what constitutes a Good Commit
 [via medium](https://medium.com/@andrewhowdencom/anatomy-of-a-good-commit-message-acd9c4490437).
 
 ### Submission & Review
@@ -161,7 +162,7 @@ GitHub will then run through a series of checks. At the time of writing, these a
 2. Meets code style expectations
 3. Passes all unit tests
 
-But are likely to change over time. GitHub will list the checks that your code must pass in the UI for the pull 
+But are likely to change over time. GitHub will list the checks that your code must pass in the UI for the pull
 request, and you can inspect the output for the build steps to understand what to do if a given build step fails.
 
 Lastly, one [of the maintainers](https://github.com/andrewhowdencom/x40.link/blob/main/CODEOWNERS) will review your
@@ -170,7 +171,7 @@ code and provide feedback if you need to make changes.
 !!! tip "Change requests are normal"
     Don't be too discouraged if the maintainers request that you make changes to your code or your commit message
     before they accept your change. Code is far more frequently read than written, and writing and submitting
-    code is the first part of its life. Maintainers optimize for the rest of the code's life, not just the first bit. 
+    code is the first part of its life. Maintainers optimize for the rest of the code's life, not just the first bit.
     Either way, they will try to close your pull request
     [as quickly as possible](https://blog.jessfraz.com/post/the-art-of-closing/)
 
@@ -193,8 +194,8 @@ execution via the [`github-pages`](https://github.com/andrewhowdencom/x40.link/d
 inspect whether your commit was released by checking the "tick" next to a given commit.
 
 The [workflow has full details](https://github.com/andrewhowdencom/x40.link/blob/main/.github/workflows/main%2Bdocumentation.yml),
-but the release process builds documentation (via `task docs/build`), uploads it (`task docs/tar`), and then publishes it to 
-GitHub pages. 
+but the release process builds documentation (via `task docs/build`), uploads it (`task docs/tar`), and then publishes it to
+GitHub pages.
 
 The domain `x40.link` points to GitHub pages.
 
@@ -209,12 +210,12 @@ The workflow then uploads it (`task container/push`)
 
 The latest image is then available via [GitHub packages](https://github.com/andrewhowdencom/x40.link/pkgs/container/x40.link),
 tagged with the same commit that triggered the workflow.
-    
-### Release to x40.link 
+
+### Release to x40.link
 
 The release to the public link shortener starts similarly to the release of GitHub — building and releasing the container.
 In addition to GitHub, it is published to Google Cloud Artifact storage (via `task container/all`) and published by
-updating the cloud run definition 
+updating the cloud run definition
 ([`deploy/prod/cr/service.yaml`](https://github.com/andrewhowdencom/x40.link/blob/main/deploy/prod/cr/service.yaml)), and
 that updated definition deployed (`task cloudrun/apply`)
 
@@ -233,6 +234,6 @@ The maintainers do not believe many users reach the service. Given this, they de
 
 ### Canary Deployment
 
-Canary deployments are a planned part of this release lifecycle, with automated rollback and clear exit 
+Canary deployments are a planned part of this release lifecycle, with automated rollback and clear exit
 criteria. Unfortunately, maintainers have not yet found time to implement the tooling requirement, and few users would
 appreciate this now.

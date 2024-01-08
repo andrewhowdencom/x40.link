@@ -46,8 +46,8 @@ jobs:
               - 'go.sum'
               - 'Containerfile'
               - '.github/workflows/main+x40.link.yml'
-              - 'deploy/prod/cr/*'
-              - 'etc/*'
+              - 'deploy/prod/cr/**'
+              - 'etc/**'
 
       - name: "(Optionally) Cancel the build"
         if: ${{ steps.filter.outputs.artifact == 'false' }}
