@@ -1,0 +1,46 @@
+syntax = "proto3";
+package x40.dev.url;
+option go_package = "github.com/andrewhowdencom/x40/api/gen/dev";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+// Request
+message Request {
+    string url = 1;
+}
+
+// Response
+message Response {
+    string url = 1;
+}
+
+// PutRequest
+message PutRequest {
+    string from = 1;
+    string to = 2;
+}
+
+service ManageURLs {
+    // Get queries a URL, returning the URL if there was found (or none, if it was not found)
+    rpc Get(Request) returns (Response) {
+        option (google.api.http) = {
+            get: "/dev/url"
+        };
+    }
+
+    // Post generates a new URL with a generated suffix.
+    rpc Post(Request) returns (Response) {
+        option (google.api.http) = {
+            post: "/dev/url"
+            body: "*"
+        };
+    }
+
+    rpc Put(PutRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            put: "/dev/url"
+            body: "*"
+        };
+    }
+}

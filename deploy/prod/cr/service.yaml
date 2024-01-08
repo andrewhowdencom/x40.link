@@ -24,3 +24,10 @@ spec:
             - "serve"
             - "--with-yaml=/urls.yaml"
             - "--listen-address=0.0.0.0:8080"
+          ports:
+          # Naming the port H2C gives a hint to Google Clouds load balancing infrastructure that this application
+          # supports HTTP/2 without TLS.
+          #
+          # See https://cloud.google.com/run/docs/configuring/http2#setting
+          - name: h2c
+            containerPort: 8080

@@ -113,7 +113,7 @@ func TestErrorMiddleware(t *testing.T) {
 
 			w := httptest.NewRecorder()
 			req, _ := http.NewRequest(http.MethodGet, "/", nil)
-			req.Header.Add(message.Accept, tc.accept)
+			req.Header.Add(message.HeaderAccept, tc.accept)
 
 			mux.ServeHTTP(w, req)
 

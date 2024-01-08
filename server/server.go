@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/andrewhowdencom/x40.link/api"
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"golang.org/x/net/http2"
 )
 
 // Option is a function type that modifies the behavior of the server
@@ -73,6 +75,40 @@ func WithStorage(str storage.Storer) Option {
 		}
 
 		mux.Get("/{slug}", sh.Redirect)
+
+		return nil
+	}
+}
+
+// WithGRPCGateway configures an interceptor to offload requests to the GRPC Gateway mux. Must be used before
+// any option that creates a route (e.g. WithStorage)
+func WithGRPCGateway() Option {
+	return func(srv *http.Server) error {
+		mux := srv.Handler.(*chi.Mux)
+
+		mux.Use(Intercept(GRPCGateway{api.NewGRPCGatewayMux()}))
+
+		return nil
+	}
+}
+
+// WithH2C allows piping the connection to a HTTP/2 server, which will hijack the request to use the HTTP/2 protocol
+// but over the initially supplied connection.
+func WithH2C(h2 *http2.Server) Option {
+	return func(srv *http.Server) error {
+		mux := srv.Handler.(*chi.Mux)
+		mux.Use(Intercept(H2C{h2}))
+
+		return nil
+	}
+}
+
+// WithGRPC enables GRPC to be served over the
+func WithGRPC() Option {
+	return func(srv *http.Server) error {
+		mux := srv.Handler.(*chi.Mux)
+
+		mux.Use(Intercept(GRPC{api.NewGRPCMux()}))
 
 		return nil
 	}

@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"golang.org/x/net/http2"
 )
 
 const (
@@ -23,6 +24,11 @@ const (
 	flagStrBoltDB  = "with-boltdb"
 
 	flagStrListenAddress = "listen-address"
+
+	flagAPIGRPC = "api-grpc"
+	flagAPIHTTP = "api-http"
+
+	flagH2C = "h2c"
 )
 
 // Sentinal errors
@@ -58,13 +64,29 @@ func init() {
 	// Allow using a file backed storage
 	serveFlagSet.StringP(flagStrBoltDB, "b", "/usr/local/share/x40/urls.db", "The place to store the URL Database")
 
+	// API configuration
+	serveFlagSet.BoolP(flagAPIGRPC, "g", true, "Whether to enable the API")
+	serveFlagSet.BoolP(flagAPIHTTP, "j", true, "Whether to enable the HTTP+JSON API")
+
+	// Protocol configuration
+	serveFlagSet.BoolP(flagH2C, "c", true, "Whether to enable HTTP/2 cleartext (with prior knowledge)")
+
 	// Bind the flags to the configuration
 	for c, f := range map[string]*pflag.Flag{
+		// Basic server configuration
+		configuration.ServerListenAddress: serveFlagSet.Lookup(flagStrListenAddress),
+
+		// Storage
 		configuration.StorageYamlFile:   serveFlagSet.Lookup(flagStrYAML),
 		configuration.StorageHashMap:    serveFlagSet.Lookup(flagStrHashMap),
 		configuration.StorageBoltDBFile: serveFlagSet.Lookup(flagStrBoltDB),
 
-		configuration.ServerListenAddress: serveFlagSet.Lookup(flagStrListenAddress),
+		// API
+		configuration.ServerGRPCAPIEnabled: serveFlagSet.Lookup(flagAPIGRPC),
+		configuration.ServerHTTPAPIEnabled: serveFlagSet.Lookup(flagAPIHTTP),
+
+		// Protocol
+		configuration.ServerH2CEnabled: serveFlagSet.Lookup(flagH2C),
 	} {
 		if err := viper.BindPFlag(c, f); err != nil {
 			panic("cannot create flag: " + err.Error())
@@ -84,10 +106,26 @@ func RunServe(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("%w: %s", sysexits.Software, err)
 	}
 
-	srv, err := server.New(
+	args := []server.Option{}
+
+	if viper.GetBool(configuration.ServerHTTPAPIEnabled) {
+		args = append(args, server.WithGRPCGateway())
+	}
+
+	if viper.GetBool(configuration.ServerH2CEnabled) {
+		args = append(args, server.WithH2C(&http2.Server{}))
+	}
+
+	if viper.GetBool(configuration.ServerGRPCAPIEnabled) {
+		args = append(args, server.WithGRPC())
+	}
+
+	args = append(args,
 		server.WithStorage(str),
 		server.WithListenAddress(viper.GetString(configuration.ServerListenAddress)),
 	)
+
+	srv, err := server.New(args...)
 	if err != nil {
 		return fmt.Errorf("%w: %s", sysexits.Software, err)
 	}

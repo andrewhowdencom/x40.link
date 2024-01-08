@@ -36,6 +36,9 @@ jobs:
     - name: Install Task
       uses: arduino/setup-task@v1
 
+    - name: "Install tools"
+      run: task tools/go/install
+
     # Validation
     - name: Build Binaries (check the syntax)
       run: task bin/all

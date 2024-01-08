@@ -3,7 +3,7 @@ package message
 
 // Header* are common header keys or values.
 const (
-	Accept            = "Accept"
+	HeaderAccept      = "Accept"
 	HeaderContentType = "Content-Type"
 	HeaderHost        = "Host"
 )
@@ -13,4 +13,5 @@ const (
 	MIMEApplicationJSON = "application/json"
 	MIMEApplicationXML  = "application/xml"
 	MIMETextXML         = "text/xml"
+	MIMEGRPC            = "application/grpc"
 )

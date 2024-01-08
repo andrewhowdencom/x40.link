@@ -56,7 +56,7 @@ func Error(next http.Handler) http.Handler {
 			panic("a non-error type added as error context")
 		}
 
-		switch r.Header.Get(message.Accept) {
+		switch r.Header.Get(message.HeaderAccept) {
 		// Both application/xml and text/xml are sometimes used.
 		case message.MIMETextXML:
 			fallthrough
