@@ -1,3 +1,4 @@
+// Package boltdb implements storage based on the BoltDB database, backed by the filesystem.
 package boltdb
 
 import (
@@ -10,6 +11,7 @@ import (
 	"go.etcd.io/bbolt"
 )
 
+// Err* are sentinel errors
 var (
 	ErrFailedToSetupDatabase = errors.New("failed to setup backing database")
 	ErrFailedToTX            = errors.New("failed to complete database transaction")
@@ -49,13 +51,13 @@ func New(path string, opts ...Option) (*BoltDB, error) {
 		}
 	}
 
-	new, err := bbolt.Open(path, 0600, bopts)
+	n, err := bbolt.Open(path, 0600, bopts)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrFailedToSetupDatabase, err)
 	}
 
 	return &BoltDB{
-		db: new,
+		db: n,
 	}, nil
 }
 
@@ -69,6 +71,7 @@ func WithFileLockWait(dur time.Duration) Option {
 	}
 }
 
+// Get returns a URL, given another input URL
 func (b *BoltDB) Get(in *url.URL) (*url.URL, error) {
 	var u *url.URL
 
@@ -98,6 +101,7 @@ func (b *BoltDB) Get(in *url.URL) (*url.URL, error) {
 	return u, nil
 }
 
+// Put saves a URL to the datastore
 func (b *BoltDB) Put(f *url.URL, t *url.URL) error {
 	return b.db.Update(func(tx *bbolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists(txBucketName)

@@ -1,4 +1,4 @@
-// package test provides a storage implementation designed explicitly for testing
+// Package test provides a storage implementation designed explicitly for testing
 package test
 
 import (
@@ -7,8 +7,8 @@ import (
 	"github.com/andrewhowdencom/x40.link/storage"
 )
 
-// TestOption modifies the behavior of New() in specific ways that make it valuable for the test.
-type TestOption func(t *ts)
+// Option modifies the behavior of New() in specific ways that make it valuable for the test.
+type Option func(t *ts)
 
 // ts is test storage
 type ts struct {
@@ -19,7 +19,7 @@ type ts struct {
 }
 
 // New generates the test storage implementation
-func New(opts ...TestOption) *ts {
+func New(opts ...Option) *ts {
 	n := &ts{}
 
 	for _, o := range opts {
@@ -31,7 +31,7 @@ func New(opts ...TestOption) *ts {
 
 // WithError modifies the storage implementation such that any operation executed against it will return
 // an error.
-func WithError(err error) TestOption {
+func WithError(err error) Option {
 	return func(t *ts) {
 		t.err = err
 	}

@@ -39,7 +39,11 @@ var teardownFunc = map[string]func(string){
 	"hash table":    func(string) {},
 	"linear search": func(string) {},
 	"binary search": func(string) {},
-	"boltdb":        func(n string) { os.Remove(path.Join(os.TempDir(), "test+"+n+"+url-shortner.db")) },
+	"boltdb": func(n string) {
+		if err := os.Remove(path.Join(os.TempDir(), "test+"+n+"+url-shortner.db")); err != nil {
+			panic(err)
+		}
+	},
 }
 
 // benchmark is a generic approach to benchmarking the various different storage implementations at different underlying data

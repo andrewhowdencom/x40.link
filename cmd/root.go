@@ -1,12 +1,11 @@
-/*
-Copyright © 2023 Andrew Howden <hello@andrewhowden.com>
-*/
+// Package cmd provides the top level commands for the application
 package cmd
 
 import (
 	"github.com/spf13/cobra"
 )
 
+// Root is the root command for this program
 var Root = &cobra.Command{
 	Use:   "x40.link",
 	Short: "Links for Skinks",

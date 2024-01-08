@@ -1,6 +1,4 @@
-/*
-Copyright © 2023 Andrew Howden <hello@andrewhowden.com>
-*/
+// Package redirect provides the commands associated with redirecting users
 package redirect
 
 import (
@@ -82,7 +80,8 @@ func init() {
 	Serve.MarkFlagsMutuallyExclusive(storageFlags...)
 }
 
-func RunServe(cmd *cobra.Command, args []string) error {
+// RunServe implements the run server command
+func RunServe(cmd *cobra.Command, _ []string) error {
 	str, err := getStorage(cmd.Flags())
 	if err != nil {
 		return fmt.Errorf("%w: %s", sysexits.Software, err)
