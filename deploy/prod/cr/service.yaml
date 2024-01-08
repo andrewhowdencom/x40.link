@@ -23,5 +23,5 @@ spec:
           args: 
             - "redirect"
             - "serve"
-            - "--with-yaml='/urls.yaml'"
-            - "--listen-address='0.0.0.0:8080'"
+            - "--with-yaml=/urls.yaml"
+            - "--listen-address=0.0.0.0:8080"
