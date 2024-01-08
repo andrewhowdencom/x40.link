@@ -37,7 +37,7 @@ func (ht *HashTable) Get(in *url.URL) (*url.URL, error) {
 	return nil, storage.ErrNotFound
 }
 
-// Storage writes a URL into memory. Designed to be used primarily via "loader" infrastructure, such as the
+// Put writes a URL into memory. Designed to be used primarily via "loader" infrastructure, such as the
 // YAML loader.
 func (ht *HashTable) Put(f *url.URL, t *url.URL) error {
 	ht.mu.Lock()

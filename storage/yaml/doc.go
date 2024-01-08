@@ -1,4 +1,4 @@
-// package yaml provides a read only storage implementation which sources its URLs from a YAML file. THe file is
+// Package yaml provides a read only storage implementation which sources its URLs from a YAML file. THe file is
 // expected to be in the format:
 //
 //	---

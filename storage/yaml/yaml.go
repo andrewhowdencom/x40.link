@@ -10,9 +10,9 @@ import (
 	parser "gopkg.in/yaml.v3"
 )
 
-// The logger for the library. Uses the default structured logger, but can be overridden to disable the output
+// Log is the logger for the library. Uses the default structured logger, but can be overridden to disable the output
 // for this package.
-var Log *slog.Logger = slog.Default()
+var Log = slog.Default()
 
 // Yaml is a simple, read only implement of storage that fetches its initial state from a file and then returns
 // that state. It rejects any writes.
@@ -32,7 +32,7 @@ type row struct {
 // New generates the storer. It receives another storer which it will enrich with the content from the YAML,
 // and an io.reader which is expected to supply the YAML (typically a file).
 //
-// Returns an error in the case there is a failure to store the URL or to whollely fail the YAML parsing, but
+// Returns an error in the case there is a failure to store the URL or to wholely fail the YAML parsing, but
 // ignores single line failures (simply skipping the record)
 func New(str storage.Storer, src io.Reader) (*yaml, error) {
 	y := &yaml{str: str}

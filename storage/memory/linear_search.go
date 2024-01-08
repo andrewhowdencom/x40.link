@@ -16,12 +16,14 @@ type LinearSearch struct {
 	mu sync.RWMutex
 }
 
+// NewLinearSearch implements the most naive approach to querying data
 func NewLinearSearch() *LinearSearch {
 	return &LinearSearch{
 		idx: make([]tu, 0),
 	}
 }
 
+// Get queries the linear search. It just iterates through the whole slice.
 func (s *LinearSearch) Get(in *url.URL) (*url.URL, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -35,6 +37,7 @@ func (s *LinearSearch) Get(in *url.URL) (*url.URL, error) {
 	return nil, storage.ErrNotFound
 }
 
+// Put writes the URL into storage, appending it to the slice.
 func (s *LinearSearch) Put(f *url.URL, t *url.URL) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

@@ -18,6 +18,7 @@ type BinarySearch struct {
 	mu  sync.RWMutex
 }
 
+// NewBinarySearch initializes a binary search object with its own properties initialized
 func NewBinarySearch() *BinarySearch {
 	return &BinarySearch{
 		idx: make([]tu, 0),
@@ -63,7 +64,7 @@ func (bs *BinarySearch) find(in *url.URL) (found bool, nearest int) {
 	}
 }
 
-// Fetch the record.
+// Get returns an URL, given an input URL
 func (bs *BinarySearch) Get(in *url.URL) (*url.URL, error) {
 	bs.mu.RLock()
 	defer bs.mu.RUnlock()
@@ -76,7 +77,7 @@ func (bs *BinarySearch) Get(in *url.URL) (*url.URL, error) {
 	return nil, storage.ErrNotFound
 }
 
-// Write the record into the set. Takes responsibility for determining the position in which to add the
+// Put writes the record into the set. Takes responsibility for determining the position in which to add the
 // new value, so that the underlying set retains order.
 func (bs *BinarySearch) Put(f *url.URL, t *url.URL) error {
 	bs.mu.Lock()

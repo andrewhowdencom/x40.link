@@ -51,7 +51,10 @@ func TestGetStorage(t *testing.T) {
 `)); err != nil {
 					panic(err)
 				}
-				file.Close()
+
+				if err := file.Close(); err != nil {
+					panic(err)
+				}
 			},
 		},
 	} {

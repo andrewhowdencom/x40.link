@@ -1,0 +1,13 @@
+linters:
+  enable:
+    - revive
+
+issues:
+  exclude-use-default: false
+
+  exclude-rules:
+    # Here, we're explicitly allowing unexported types. This is a common type where we definitely do not want people
+    # extending or embedding the interface, such as test types.
+    - linters:
+      - revive
+      text: ".*returns unexported type.*"
