@@ -1,5 +1,4 @@
-// Package redirect provides the commands associated with redirecting users
-package redirect
+package cmd
 
 import (
 	"errors"
@@ -38,8 +37,8 @@ var (
 
 var storageFlags = []string{flagStrHashMap, flagStrYAML, flagStrBoltDB}
 
-// Serve starts the HTTP server that will redirect a given HTTP request to a destination.
-var Serve = &cobra.Command{
+// serveCmd starts the HTTP server that will redirect a given HTTP request to a destination.
+var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start the server that handles redirects",
 	RunE:  RunServe,
@@ -73,9 +72,9 @@ func init() {
 	}
 
 	// Bind the flag set to the command, and ensure it validated.
-	Serve.Flags().AddFlagSet(serveFlagSet)
-	Serve.MarkFlagsOneRequired(storageFlags...)
-	Serve.MarkFlagsMutuallyExclusive(storageFlags...)
+	serveCmd.Flags().AddFlagSet(serveFlagSet)
+	serveCmd.MarkFlagsOneRequired(storageFlags...)
+	serveCmd.MarkFlagsMutuallyExclusive(storageFlags...)
 }
 
 // RunServe implements the run server command

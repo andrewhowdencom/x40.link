@@ -42,7 +42,7 @@ The application can be deployed locally as a compute-local forwarder, similar to
     After=network-online.target
 
     [Service]
-    ExecStart=/usr/local/bin/x40.link redirect serve --with-yaml /etc/x40.link/urls.yaml
+    ExecStart=/usr/local/bin/x40.link serve --with-yaml /etc/x40.link/urls.yaml
 
     [Install]
     WantedBy=multi-user.target
