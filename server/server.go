@@ -5,21 +5,15 @@ package server
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/andrewhowdencom/x40.link/storage"
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
-// Server is a wrapper around the gin engine, allowing us to configure it as
-// we see fit.
-type Server struct {
-	engine *gin.Engine
-
-	listen string
-}
-
 // Option is a function type that modifies the behavior of the server
-type Option func(*Server) error
+type Option func(*http.Server) error
 
 // Err* are sentinel errors
 var (
@@ -29,14 +23,14 @@ var (
 
 var defaultOptions = []Option{
 	WithListenAddress("localhost:80"),
-	WithGinMode(gin.ReleaseMode),
+	WithMiddleware(middleware.Recoverer),
+	WithMiddleware(Error),
 }
 
 // New creates a server instance, configured appropriately
-func New(opts ...Option) (*Server, error) {
-	r := gin.New()
-	srv := &Server{
-		engine: r,
+func New(opts ...Option) (*http.Server, error) {
+	srv := &http.Server{
+		Handler: chi.NewRouter(),
 	}
 
 	opts = append(defaultOptions, opts...)
@@ -50,43 +44,35 @@ func New(opts ...Option) (*Server, error) {
 	return srv, nil
 }
 
-// Start will start the server
-//
-// This will block the invoking goroutine indefinitely, unless an error occurs
-func (s *Server) Start() error {
-	if err := s.engine.Run(s.listen); err != nil {
-		return fmt.Errorf("%w: %s", ErrFailedToStart, err)
-	}
+// WithMiddleware appends middleware to the default handler
+func WithMiddleware(m func(next http.Handler) http.Handler) Option {
+	return func(srv *http.Server) error {
+		mux := srv.Handler.(*chi.Mux)
+		mux.Use(m)
 
-	return nil
+		return nil
+	}
 }
 
 // WithListenAddress indicates the server should start on the specific address
 func WithListenAddress(addr string) Option {
-	return func(s *Server) error {
-		s.listen = addr
+	return func(s *http.Server) error {
+		s.Addr = addr
 
 		return nil
 	}
 }
 
-// WithStorage allows starting the service with a specific storage engine
+// WithStorage allows starting the service with a specific storage engine.
 func WithStorage(str storage.Storer) Option {
-	return func(srv *Server) error {
+	return func(srv *http.Server) error {
+		mux := srv.Handler.(*chi.Mux)
+
 		sh := &strHandler{
 			str: str,
 		}
 
-		srv.engine.NoRoute(sh.Redirect)
-
-		return nil
-	}
-}
-
-// WithGinMode sets the gin mode. Warning: This sets a global property for all gin instances.
-func WithGinMode(m string) Option {
-	return func(s *Server) error {
-		gin.SetMode(m)
+		mux.Get("/{slug}", sh.Redirect)
 
 		return nil
 	}

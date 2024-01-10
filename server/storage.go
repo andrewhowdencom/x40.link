@@ -5,31 +5,40 @@ import (
 	"net/url"
 
 	"github.com/andrewhowdencom/x40.link/storage"
-	"github.com/gin-gonic/gin"
+	"schneider.vip/problem"
 )
 
 type strHandler struct {
 	str storage.Storer
 }
 
-func (o *strHandler) Redirect(c *gin.Context) {
+// Redirect receives a request, and if it matches a storage, responds.
+func (o *strHandler) Redirect(w http.ResponseWriter, r *http.Request) {
 	lookup := &url.URL{
-		Host: c.Request.Host,
-		Path: c.Request.URL.Path,
+		Host: r.Host,
+		Path: r.URL.Path,
 	}
 
 	red, err := o.str.Get(lookup)
+
 	if err == storage.ErrNotFound {
-		c.AbortWithStatus(http.StatusNotFound)
+		WithError(r, problem.New(
+			problem.Status(http.StatusNotFound),
+			problem.Custom("url", lookup.String()),
+			problem.WrapSilent(err),
+		))
+
 		return
 	}
 
 	if err == nil {
-		c.Status(http.StatusTemporaryRedirect)
-		c.Header("Location", red.String())
+		w.Header().Add("Location", red.String())
+		w.WriteHeader(http.StatusTemporaryRedirect)
 		return
 	}
 
-	// The error returned here is not actionable within this function; error handling is deferred to middleware.
-	_ = c.AbortWithError(http.StatusInternalServerError, err)
+	WithError(r, problem.New(
+		problem.Status(http.StatusInternalServerError),
+		problem.WrapSilent(err),
+	))
 }

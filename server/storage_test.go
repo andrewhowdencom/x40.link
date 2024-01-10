@@ -9,8 +9,8 @@ import (
 
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/andrewhowdencom/x40.link/storage/test"
-	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"schneider.vip/problem"
 )
 
 func TestStoreHandler_Get(t *testing.T) {
@@ -64,10 +64,11 @@ func TestStoreHandler_Get(t *testing.T) {
 				},
 			},
 			storage: test.New(),
-
-			statusCode: http.StatusNotFound,
-			headers:    http.Header{},
-			err:        nil,
+			headers: http.Header{},
+			err: problem.New(
+				problem.Status(http.StatusNotFound),
+				problem.Custom("url", "//s3k/foo"),
+			),
 		},
 		{
 			name: "storage failure",
@@ -92,27 +93,21 @@ func TestStoreHandler_Get(t *testing.T) {
 
 			// Bootstrap
 			w := httptest.NewRecorder()
-			ctx, _ := gin.CreateTestContext(w)
-			ctx.Request = tc.req
 
 			handler := &strHandler{str: tc.storage}
-			handler.Redirect(ctx)
 
-			// Gin, within each handler, doesn't necessarily flush. Flushing, in this case, includes setting the
-			// status
-			ctx.Writer.Flush()
+			handler.Redirect(w, tc.req)
 
-			// Validate the error conditrion
+			err, isError := tc.req.Context().Value(CtxErrors).(error)
+
 			if tc.err == nil {
-				assert.Len(t, ctx.Errors, 0)
+				assert.False(t, isError)
+				assert.Equal(t, tc.statusCode, w.Result().StatusCode)
+				assert.Equal(t, w.Result().Header, tc.headers)
 			} else {
-				assert.Len(t, ctx.Errors, 1)
-				assert.ErrorIs(t, ctx.Errors[0], tc.err)
+				assert.True(t, isError)
+				assert.ErrorIs(t, err, tc.err)
 			}
-
-			// Validate the response
-			assert.Equal(t, tc.statusCode, w.Result().StatusCode)
-			assert.Equal(t, w.Result().Header, tc.headers)
 		})
 	}
 }
