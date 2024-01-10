@@ -18,5 +18,5 @@ code!`,
 }
 
 func init() {
-	Root.AddCommand(redirectCmd)
+	Root.AddCommand(serveCmd)
 }
