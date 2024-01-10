@@ -92,7 +92,7 @@ func RunServe(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("%w: %s", sysexits.Software, err)
 	}
 
-	return srv.Start()
+	return srv.ListenAndServe()
 }
 
 // getStorage fetches the appropriate storage for the supplied configuration. Assumes that at least one configuration
