@@ -77,8 +77,11 @@ func (fs Firestore) Put(from *url.URL, to *url.URL) error {
 
 // urlToPath converts the URL into a document ID.
 func urlToPath(url *url.URL) string {
-	return path.Join(
-		FirestoreCollection, url.Host,
-		"id", strings.Replace(url.Path, "/", "+", -1),
-	)
+	p := []string{FirestoreCollection, url.Host}
+
+	if url.Path != "" {
+		p = append(p, "id", strings.Replace(url.Path, "/", "+", -1))
+	}
+
+	return path.Join(p...)
 }
