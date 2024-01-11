@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"net/http"
 	"net/url"
 
@@ -21,7 +22,7 @@ func (o *strHandler) Redirect(w http.ResponseWriter, r *http.Request) {
 
 	red, err := o.str.Get(lookup)
 
-	if err == storage.ErrNotFound {
+	if errors.Is(err, storage.ErrNotFound) {
 		WithError(r, problem.New(
 			problem.Status(http.StatusNotFound),
 			problem.Custom("url", lookup.String()),
