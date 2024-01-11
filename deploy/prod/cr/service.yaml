@@ -23,7 +23,7 @@ spec:
           args: 
             - "serve"
             - "--listen-address=0.0.0.0:8080"
-            - "--with-firebase=andrewhowdencom"
+            - "--with-firestore=andrewhowdencom"
           ports:
           # Naming the port H2C gives a hint to Google Clouds load balancing infrastructure that this application
           # supports HTTP/2 without TLS.
