@@ -22,7 +22,7 @@ WORKDIR /mnt
 COPY . /mnt
 
 # Build the binary
-RUN task bin
+RUN task tools/go/install bin
 
 # An imagine with SSL certificates (and some other Linux niceties)
 # See
