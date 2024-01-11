@@ -2,6 +2,7 @@ package storage_test
 
 import (
 	"encoding/base64"
+	"errors"
 	"math/rand"
 	"net/url"
 	"os"
@@ -109,7 +110,7 @@ func race(str storage.Storer) {
 			} else {
 				if _, err := str.Get(&url.URL{
 					Host: "x40",
-				}); err != nil && err != storage.ErrNotFound {
+				}); err != nil && !errors.Is(err, storage.ErrNotFound) {
 					panic(err)
 				}
 			}

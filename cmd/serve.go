@@ -1,15 +1,18 @@
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 
+	"cloud.google.com/go/firestore"
 	"github.com/andrewhowdencom/sysexits"
 	"github.com/andrewhowdencom/x40.link/configuration"
 	"github.com/andrewhowdencom/x40.link/server"
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/andrewhowdencom/x40.link/storage/boltdb"
+	fsdb "github.com/andrewhowdencom/x40.link/storage/firestore"
 	"github.com/andrewhowdencom/x40.link/storage/memory"
 	"github.com/andrewhowdencom/x40.link/storage/yaml"
 	"github.com/spf13/cobra"
@@ -19,9 +22,10 @@ import (
 )
 
 const (
-	flagStrHashMap = "with-hash-map"
-	flagStrYAML    = "with-yaml"
-	flagStrBoltDB  = "with-boltdb"
+	flagStrHashMap   = "with-hash-map"
+	flagStrYAML      = "with-yaml"
+	flagStrBoltDB    = "with-boltdb"
+	flagStrFirestore = "with-firestore"
 
 	flagStrListenAddress = "listen-address"
 
@@ -41,7 +45,7 @@ var (
 	serveFlagSet = &pflag.FlagSet{}
 )
 
-var storageFlags = []string{flagStrHashMap, flagStrYAML, flagStrBoltDB}
+var storageFlags = []string{flagStrHashMap, flagStrYAML, flagStrBoltDB, flagStrFirestore}
 
 // serveCmd starts the HTTP server that will redirect a given HTTP request to a destination.
 var serveCmd = &cobra.Command{
@@ -64,6 +68,9 @@ func init() {
 	// Allow using a file backed storage
 	serveFlagSet.StringP(flagStrBoltDB, "b", "/usr/local/share/x40/urls.db", "The place to store the URL Database")
 
+	// External Services
+	serveFlagSet.StringP(flagStrFirestore, "f", "", "Use the firestore database at project <input>")
+
 	// API configuration
 	serveFlagSet.BoolP(flagAPIGRPC, "g", true, "Whether to enable the API")
 	serveFlagSet.BoolP(flagAPIHTTP, "j", true, "Whether to enable the HTTP+JSON API")
@@ -77,9 +84,10 @@ func init() {
 		configuration.ServerListenAddress: serveFlagSet.Lookup(flagStrListenAddress),
 
 		// Storage
-		configuration.StorageYamlFile:   serveFlagSet.Lookup(flagStrYAML),
-		configuration.StorageHashMap:    serveFlagSet.Lookup(flagStrHashMap),
-		configuration.StorageBoltDBFile: serveFlagSet.Lookup(flagStrBoltDB),
+		configuration.StorageYamlFile:         serveFlagSet.Lookup(flagStrYAML),
+		configuration.StorageHashMap:          serveFlagSet.Lookup(flagStrHashMap),
+		configuration.StorageBoltDBFile:       serveFlagSet.Lookup(flagStrBoltDB),
+		configuration.StorageFirestoreProject: serveFlagSet.Lookup(flagStrFirestore),
 
 		// API
 		configuration.ServerGRPCAPIEnabled: serveFlagSet.Lookup(flagAPIGRPC),
@@ -170,6 +178,19 @@ func getStorage(flags *pflag.FlagSet) (storage.Storer, error) {
 			}
 
 			return db, nil
+		case flagStrFirestore:
+			client, err := firestore.NewClient(
+				context.Background(),
+				viper.GetString(configuration.StorageFirestoreProject),
+			)
+
+			if err != nil {
+				return nil, fmt.Errorf("%w: %s", boltdb.ErrFailedToSetupDatabase, err)
+			}
+
+			return fsdb.Firestore{
+				Client: client,
+			}, nil
 		default:
 			return nil, ErrUnsupportedStorage
 		}

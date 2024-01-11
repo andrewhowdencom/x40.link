@@ -10,6 +10,8 @@ var (
 	ErrNotFound           = errors.New("input url not found")
 	ErrStorageSetupFailed = errors.New("storage setup failed")
 	ErrReadOnlyStorage    = errors.New("storage is read only")
+	ErrFailed             = errors.New("storage implementation failed")
+	ErrCorrupt            = errors.New("the data returned by the storage is invalid")
 )
 
 // Storer is the interface that retrieves links supplied to it. Methods are named after the RESTful HTTP

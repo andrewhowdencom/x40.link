@@ -12,7 +12,8 @@ const (
 
 // Storage* is configuration related to the link storage logic.
 const (
-	StorageYamlFile   = "storage.yaml.file"
-	StorageHashMap    = "storage.hash-map"
-	StorageBoltDBFile = "store.boltdb.file"
+	StorageYamlFile         = "storage.yaml.file"
+	StorageHashMap          = "storage.hash-map"
+	StorageBoltDBFile       = "store.boltdb.file"
+	StorageFirestoreProject = "storage.firestore.project"
 )
