@@ -40,8 +40,8 @@ jobs:
       run: task tools/go/install
 
     # Validation
-    - name: Build Binaries (check the syntax)
-      run: task bin/all
+    - name: Try the build process
+      run: task bin/all container/build
 
     # Test
     - name: Test
