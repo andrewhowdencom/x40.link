@@ -2,7 +2,7 @@
 
 ## Operating Systems
 
-The code is developed primarily on Linux based operating systems (e.g. Debian)
+The code is developed primarily on Linux-based operating systems (e.g., Debian)
 
 ## Languages
 
@@ -24,20 +24,28 @@ The following are programmed in:
 
 ## Tools
 
-The following are the tools used to build, deploy, maintain, code etc.
+The following are the tools used to build, deploy, maintain, code, etc.
 
-| Tool       | Purpose                                                                                                |
-|:---------- |:-------------------------------------------------------------------------------------------------------|
-| [hadolint] | Lint the Dockerfile                                                                                    |
-| [podman]   | Build containers                                                                                       |
-| [poetry]   | Manage dependencies & virtual environments in Python                                                   |
-| [task]     | Run defined tasks                                                                                      |
-| [tar]      | Compress directories into archives                                                                     |
-| [tofu]     | Deploy infrastructure as code                                                                          |
+| Tool           | Purpose                                                                                           |
+|:---------------|:--------------------------------------------------------------------------------------------------|
+| [buf]          | Manage protocol buffers                                                                           |
+| [cfssl]        | Generate PKI material                                                                             |
+| [grpc-gateway] | Generate a HTTP+JSON gateway to the gRPC server                                                   |
+| [hadolint]     | Lint the Dockerfile                                                                               |
+| [podman]       | Build containers                                                                                  |
+| [poetry]       | Manage dependencies & virtual environments in Python                                              |
+| [protoc]       | Protocol Buffers                                                                                  |
+| [task]         | Run defined tasks                                                                                 |
+| [tar]          | Compress directories into archives                                                                |
+| [tofu]         | Deploy infrastructure as code                                                                     |
 
+[buf]: https://github.com/bufbuild/buf
+[cfssl]: https://github.com/cloudflare/cfssl
+[grpc-gateway]: https://github.com/grpc-ecosystem/grpc-gateway
 [handolint]: https://github.com/hadolint/hadolint
 [podman]: https://podman.io/
 [poetry]: https://python-poetry.org/
+[protoc]: https://grpc.io/docs/protoc-installation/
 [task]: https://taskfile.dev/
 [tar]: https://www.gnu.org/software/tar/
 [tofu]: https://opentofu.org/

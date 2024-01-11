@@ -9,6 +9,9 @@ x40.link
 next.planfile
 *.backup
 
+# Generated API Files
+api/gen
+api/openapi
 
 # Test binary, built with `go test -c`
 *.test

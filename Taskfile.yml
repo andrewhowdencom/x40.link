@@ -16,7 +16,9 @@ tasks:
     requires:
       vars: [GOOS, GOARCH]
     cmds:
+      # Generate the required files
       - mkdir -p "dist/{{ .GOOS }}+{{ .GOARCH }}"
+      - cd api && buf generate
       - go build -o "dist/{{ .GOOS }}+{{ .GOARCH }}/x40.link{{ exeExt }}"
 
   bin/all:
@@ -181,3 +183,12 @@ tasks:
     desc: "Run the default set of unit tests"
     cmds:
       - go test ./... -race -vet=all
+
+  tools/go/install:
+    desc: "Installs a series of go tools"
+    cmds:
+      - go install "github.com/bufbuild/buf/cmd/buf"
+      - go install "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway"
+      - go install "github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2"
+      - go install "google.golang.org/grpc/cmd/protoc-gen-go-grpc"
+      - go install "google.golang.org/protobuf/cmd/protoc-gen-go"

@@ -16,6 +16,25 @@ files = [
 dev = ["freezegun (>=1.0,<2.0)", "pytest (>=6.0)", "pytest-cov"]
 
 [[package]]
+name = "beautifulsoup4"
+version = "4.12.2"
+description = "Screen-scraping library"
+category = "main"
+optional = false
+python-versions = ">=3.6.0"
+files = [
+    {file = "beautifulsoup4-4.12.2-py3-none-any.whl", hash = "sha256:bd2520ca0d9d7d12694a53d44ac482d181b4ec1888909b035a3dbf40d0f57d4a"},
+    {file = "beautifulsoup4-4.12.2.tar.gz", hash = "sha256:492bbc69dca35d12daac71c4db1bfff0c876c00ef4a2ffacce226d4638eb72da"},
+]
+
+[package.dependencies]
+soupsieve = ">1.2"
+
+[package.extras]
+html5lib = ["html5lib"]
+lxml = ["lxml"]
+
+[[package]]
 name = "certifi"
 version = "2023.11.17"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -440,6 +459,21 @@ files = [
 ]
 
 [[package]]
+name = "mkdocs-swagger-ui-tag"
+version = "0.6.7"
+description = "A MkDocs plugin supports for add Swagger UI in page."
+category = "main"
+optional = false
+python-versions = "*"
+files = [
+    {file = "mkdocs-swagger-ui-tag-0.6.7.tar.gz", hash = "sha256:a1fa79c1761ccf82fb45969ef15597f43f7169e6c581f80f42bd5168fa07105b"},
+    {file = "mkdocs_swagger_ui_tag-0.6.7-py3-none-any.whl", hash = "sha256:522a7412ab35dfb4ab8fbe99364fc6e08d7613eac441ba79be5f7ba84d027663"},
+]
+
+[package.dependencies]
+beautifulsoup4 = ">=4.11.1"
+
+[[package]]
 name = "packaging"
 version = "23.2"
 description = "Core utilities for Python packages"
@@ -777,6 +811,18 @@ files = [
 ]
 
 [[package]]
+name = "soupsieve"
+version = "2.5"
+description = "A modern CSS selector implementation for Beautiful Soup."
+category = "main"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "soupsieve-2.5-py3-none-any.whl", hash = "sha256:eaa337ff55a1579b6549dc679565eac1e3d000563bcb1c8ab0d0fefbc0c2cdc7"},
+    {file = "soupsieve-2.5.tar.gz", hash = "sha256:5663d5a7b3bfaeee0bc4372e7fc48f9cff4940b3eec54a6451cc5299f1097690"},
+]
+
+[[package]]
 name = "urllib3"
 version = "2.1.0"
 description = "HTTP library with thread-safe connection pooling, file post, and more."
@@ -836,4 +882,4 @@ watchmedo = ["PyYAML (>=3.10)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "c91fdf91549115517496673a2f819456d066df66fc0bafa5414eac3feb294013"
+content-hash = "e9797180b92d82a5b9d2f09575117f5b043fbb233e5f50d0d040f4603d611a7b"

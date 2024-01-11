@@ -84,6 +84,9 @@ jobs:
       - name: Install Task
         uses: arduino/setup-task@v1
 
+      - name: "Install tools"
+        run: task tools/go/install
+
       - name: Build
         run: task container/all
 

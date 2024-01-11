@@ -1,0 +1,19 @@
+version: v1
+plugins:
+  - plugin: go
+    out: gen
+    opt:
+      - paths=source_relative
+  - plugin: go-grpc
+    out: gen
+    opt:
+      - paths=source_relative
+  - plugin: grpc-gateway
+    out: gen
+    opt:
+      - paths=source_relative
+  - plugin: openapiv2
+    out: openapi
+    strategy: all
+    opt: allow_merge=true,merge_file_name=api
+
