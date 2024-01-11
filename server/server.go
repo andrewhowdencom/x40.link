@@ -74,7 +74,7 @@ func WithStorage(str storage.Storer) Option {
 			str: str,
 		}
 
-		mux.Get("/{slug}", sh.Redirect)
+		mux.NotFound(sh.Redirect)
 
 		return nil
 	}
