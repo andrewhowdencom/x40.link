@@ -57,4 +57,4 @@ ENV GOOS="linux"
 
 COPY --from=build /mnt/dist/linux+${GOARCH}/x40.link /usr/bin/x40.link
 
-CMD ["/usr/bin/x40.link", "serve", "--with-boltdb", "/tmp/urls.db", "--listen-address", "0.0.0.0:80"]
+CMD ["/usr/bin/x40.link", "serve", "--storage.boltdb.file", "/tmp/urls.db", "--server.listen-address", "0.0.0.0:80"]

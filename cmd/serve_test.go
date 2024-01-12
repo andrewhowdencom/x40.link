@@ -4,6 +4,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/andrewhowdencom/x40.link/configuration"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,18 +24,18 @@ func TestGetStorage(t *testing.T) {
 	}{
 		{
 			name:  "in memory storage",
-			fName: flagStrHashMap,
+			fName: configuration.StorageHashMap,
 			fVal:  "true",
 		},
 		{
 			name:  "disabled in memory storage",
-			fName: flagStrHashMap,
+			fName: configuration.StorageHashMap,
 			fVal:  "false",
 			err:   ErrFailedStorageSetup,
 		},
 		{
 			name:  "yaml storage",
-			fName: flagStrYAML,
+			fName: configuration.StorageYamlFile,
 			fVal:  tmpDir + "/urls.yaml",
 			setup: func() {
 				file, err := os.Create(tmpDir + "/urls.yaml")

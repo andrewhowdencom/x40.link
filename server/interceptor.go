@@ -6,6 +6,29 @@ import (
 	"github.com/andrewhowdencom/x40.link/server/message"
 )
 
+// MatcherFunc is a function that can be used by the interceptor to match requests.
+type MatcherFunc func(*http.Request) bool
+
+// AllOf combines multiple matchers into a single matcher func
+func AllOf(matchers ...MatcherFunc) MatcherFunc {
+	return func(r *http.Request) bool {
+		for _, m := range matchers {
+			if !m(r) {
+				return false
+			}
+		}
+
+		return true
+	}
+}
+
+// IsHost matches whether or not a request matches a specific host
+func IsHost(host string) MatcherFunc {
+	return func(r *http.Request) bool {
+		return r.Host == host
+	}
+}
+
 // IsExpectingJSON indicates that a request is looking to expect JSON. In practice, this is used to redirect
 // to the gRPC API
 func IsExpectingJSON(r *http.Request) bool {
@@ -69,7 +92,7 @@ func IsH2C(r *http.Request) bool {
 // redirects them to some other handler.
 //
 // This allows using more complex matching logic. See IsGRPCGateway for an example.
-func Intercept(matches func(req *http.Request) bool, intercept http.Handler) func(next http.Handler) http.Handler {
+func Intercept(matches MatcherFunc, intercept http.Handler) func(next http.Handler) http.Handler {
 	return func(standard http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if matches(r) {

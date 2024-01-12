@@ -83,11 +83,14 @@ func WithStorage(str storage.Storer) Option {
 
 // WithGRPCGateway configures an interceptor to offload requests to the GRPC Gateway mux. Must be used before
 // any option that creates a route (e.g. WithStorage)
-func WithGRPCGateway() Option {
+func WithGRPCGateway(limits ...MatcherFunc) Option {
 	return func(srv *http.Server) error {
 		mux := srv.Handler.(*chi.Mux)
 
-		mux.Use(Intercept(IsExpectingJSON, api.NewGRPCGatewayMux()))
+		mux.Use(Intercept(
+			AllOf(append(limits, IsExpectingJSON)...),
+			api.NewGRPCGatewayMux()),
+		)
 
 		return nil
 	}
@@ -110,10 +113,14 @@ func WithH2C() Option {
 }
 
 // WithGRPC enables GRPC to be served over the
-func WithGRPC() Option {
+func WithGRPC(limits ...MatcherFunc) Option {
 	return func(srv *http.Server) error {
 		mux := srv.Handler.(*chi.Mux)
-		mux.Use(Intercept(IsGRPC, api.NewGRPCMux()))
+
+		mux.Use(Intercept(
+			AllOf(append(limits, IsGRPC)...),
+			api.NewGRPCMux()),
+		)
 
 		return nil
 	}

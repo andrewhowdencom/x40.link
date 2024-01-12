@@ -20,20 +20,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	flagStrHashMap   = "with-hash-map"
-	flagStrYAML      = "with-yaml"
-	flagStrBoltDB    = "with-boltdb"
-	flagStrFirestore = "with-firestore"
-
-	flagStrListenAddress = "listen-address"
-
-	flagAPIGRPC = "api-grpc"
-	flagAPIHTTP = "api-http"
-
-	flagH2C = "h2c"
-)
-
 // Sentinal errors
 var (
 	ErrUnsupportedStorage = errors.New("storage unsupported")
@@ -44,7 +30,12 @@ var (
 	serveFlagSet = &pflag.FlagSet{}
 )
 
-var storageFlags = []string{flagStrHashMap, flagStrYAML, flagStrBoltDB, flagStrFirestore}
+var storageFlags = []string{
+	configuration.StorageHashMap,
+	configuration.StorageYamlFile,
+	configuration.StorageBoltDBFile,
+	configuration.StorageFirestoreProject,
+}
 
 // serveCmd starts the HTTP server that will redirect a given HTTP request to a destination.
 var serveCmd = &cobra.Command{
@@ -55,49 +46,30 @@ var serveCmd = &cobra.Command{
 
 func init() {
 	// Specify the address on which to listen
-	serveFlagSet.StringP(flagStrListenAddress, "l", "localhost:80", "The address on which to listen to incoming requests")
+	serveFlagSet.StringP(configuration.ServerListenAddress, "l", "localhost:80", "The address on which to listen to incoming requests")
 
 	// Allow providing the YAML based storage engine
-	serveFlagSet.StringP(flagStrYAML, "y", "", "Use the supplied source file as a 'yaml storage'")
+	serveFlagSet.StringP(configuration.StorageYamlFile, "y", "", "Use the supplied source file as a 'yaml storage'")
 
 	// Allow providing the in-memory based storage engine
-	serveFlagSet.BoolP(flagStrHashMap, "m", false, "Use in-memory (hashmap) storage")
-	serveFlagSet.Lookup(flagStrHashMap).NoOptDefVal = "true"
+	serveFlagSet.BoolP(configuration.StorageHashMap, "m", false, "Use in-memory (hashmap) storage")
+	serveFlagSet.Lookup(configuration.StorageHashMap).NoOptDefVal = "true"
 
 	// Allow using a file backed storage
-	serveFlagSet.StringP(flagStrBoltDB, "b", "/usr/local/share/x40/urls.db", "The place to store the URL Database")
+	serveFlagSet.StringP(configuration.StorageBoltDBFile, "b", "/usr/local/share/x40/urls.db", "The place to store the URL Database")
 
 	// External Services
-	serveFlagSet.StringP(flagStrFirestore, "f", "", "Use the firestore database at project <input>")
+	serveFlagSet.StringP(configuration.StorageFirestoreProject, "f", "", "Use the firestore database at project <input>")
 
 	// API configuration
-	serveFlagSet.BoolP(flagAPIGRPC, "g", true, "Whether to enable the API")
-	serveFlagSet.BoolP(flagAPIHTTP, "j", true, "Whether to enable the HTTP+JSON API")
+	serveFlagSet.StringP(configuration.ServerAPIGRPCHost, "g", "", "The host on which to listen for GRPC requests (* for all)")
+	serveFlagSet.StringP(configuration.ServerAPIHTTPHost, "j", "", "The host on which to listen to HTTP+JSON requests (* for all)")
 
 	// Protocol configuration
-	serveFlagSet.BoolP(flagH2C, "c", true, "Whether to enable HTTP/2 cleartext (with prior knowledge)")
+	serveFlagSet.BoolP(configuration.ServerH2CEnabled, "c", true, "Whether to enable HTTP/2 cleartext (with prior knowledge)")
 
-	// Bind the flags to the configuration
-	for c, f := range map[string]*pflag.Flag{
-		// Basic server configuration
-		configuration.ServerListenAddress: serveFlagSet.Lookup(flagStrListenAddress),
-
-		// Storage
-		configuration.StorageYamlFile:         serveFlagSet.Lookup(flagStrYAML),
-		configuration.StorageHashMap:          serveFlagSet.Lookup(flagStrHashMap),
-		configuration.StorageBoltDBFile:       serveFlagSet.Lookup(flagStrBoltDB),
-		configuration.StorageFirestoreProject: serveFlagSet.Lookup(flagStrFirestore),
-
-		// API
-		configuration.ServerGRPCAPIEnabled: serveFlagSet.Lookup(flagAPIGRPC),
-		configuration.ServerHTTPAPIEnabled: serveFlagSet.Lookup(flagAPIHTTP),
-
-		// Protocol
-		configuration.ServerH2CEnabled: serveFlagSet.Lookup(flagH2C),
-	} {
-		if err := viper.BindPFlag(c, f); err != nil {
-			panic("cannot create flag: " + err.Error())
-		}
+	if err := viper.BindPFlags(serveFlagSet); err != nil {
+		panic("cannot create flag: " + err.Error())
 	}
 
 	// Bind the flag set to the command, and ensure it validated.
@@ -115,16 +87,24 @@ func RunServe(cmd *cobra.Command, _ []string) error {
 
 	args := []server.Option{}
 
-	if viper.GetBool(configuration.ServerHTTPAPIEnabled) {
-		args = append(args, server.WithGRPCGateway())
-	}
-
 	if viper.GetBool(configuration.ServerH2CEnabled) {
 		args = append(args, server.WithH2C())
 	}
 
-	if viper.GetBool(configuration.ServerGRPCAPIEnabled) {
+	jHost, gHost :=
+		viper.GetString(configuration.ServerAPIHTTPHost),
+		viper.GetString(configuration.ServerAPIGRPCHost)
+
+	if jHost == "*" {
+		args = append(args, server.WithGRPCGateway())
+	} else if jHost != "" {
+		args = append(args, server.WithGRPCGateway(server.IsHost(jHost)))
+	}
+
+	if gHost == "*" {
 		args = append(args, server.WithGRPC())
+	} else if gHost != "" {
+		args = append(args, server.WithGRPC(server.IsHost(gHost)))
 	}
 
 	args = append(args,
@@ -150,7 +130,7 @@ func getStorage(flags *pflag.FlagSet) (storage.Storer, error) {
 		}
 
 		switch f {
-		case flagStrHashMap:
+		case configuration.StorageHashMap:
 			// It is possible, in principle, for the user to supply the flag but to be disabling the
 			// option rather than just including it.
 			if !viper.GetBool(configuration.StorageHashMap) {
@@ -158,7 +138,7 @@ func getStorage(flags *pflag.FlagSet) (storage.Storer, error) {
 			}
 
 			return memory.NewHashTable(), nil
-		case flagStrYAML:
+		case configuration.StorageYamlFile:
 			f, err := os.Open(viper.GetString(configuration.StorageYamlFile))
 			if err != nil {
 				return nil, fmt.Errorf("%w: %s", ErrFailedStorageSetup, err)
@@ -170,14 +150,14 @@ func getStorage(flags *pflag.FlagSet) (storage.Storer, error) {
 			}
 
 			return y, nil
-		case flagStrBoltDB:
+		case configuration.StorageBoltDBFile:
 			db, err := boltdb.New(viper.GetString(configuration.StorageBoltDBFile))
 			if err != nil {
 				return nil, fmt.Errorf("%w: %s", ErrFailedStorageSetup, err)
 			}
 
 			return db, nil
-		case flagStrFirestore:
+		case configuration.StorageFirestoreProject:
 			client, err := firestore.NewClient(
 				context.Background(),
 				viper.GetString(configuration.StorageFirestoreProject),

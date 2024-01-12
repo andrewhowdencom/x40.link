@@ -22,8 +22,10 @@ spec:
           command: ["/usr/bin/x40.link"]
           args: 
             - "serve"
-            - "--listen-address=0.0.0.0:8080"
-            - "--with-firestore=andrewhowdencom"
+            - "--server.listen-address=0.0.0.0:8080"
+            - "--storage.firestore.project=andrewhowdencom"
+            - "--server.api.grpc=api.x40.link"
+            - "--server.api.http"
           ports:
           # Naming the port H2C gives a hint to Google Clouds load balancing infrastructure that this application
           # supports HTTP/2 without TLS.
