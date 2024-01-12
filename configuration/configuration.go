@@ -3,9 +3,9 @@ package configuration
 
 // Server* is configuration that modifies how the server is run
 const (
-	ServerListenAddress  = "server.listen-address"
-	ServerHTTPAPIEnabled = "server.api.http.enabled"
-	ServerGRPCAPIEnabled = "server.api.grpc.enabled"
+	ServerListenAddress = "server.listen-address"
+	ServerAPIHTTPHost   = "server.api.http.host"
+	ServerAPIGRPCHost   = "server.api.grpc.host"
 
 	ServerH2CEnabled = "server.protocol.h2c.enabled"
 )
@@ -14,6 +14,6 @@ const (
 const (
 	StorageYamlFile         = "storage.yaml.file"
 	StorageHashMap          = "storage.hash-map"
-	StorageBoltDBFile       = "store.boltdb.file"
+	StorageBoltDBFile       = "storage.boltdb.file"
 	StorageFirestoreProject = "storage.firestore.project"
 )
