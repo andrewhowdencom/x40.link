@@ -18,7 +18,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"golang.org/x/net/http2"
 )
 
 const (
@@ -121,7 +120,7 @@ func RunServe(cmd *cobra.Command, _ []string) error {
 	}
 
 	if viper.GetBool(configuration.ServerH2CEnabled) {
-		args = append(args, server.WithH2C(&http2.Server{}))
+		args = append(args, server.WithH2C())
 	}
 
 	if viper.GetBool(configuration.ServerGRPCAPIEnabled) {

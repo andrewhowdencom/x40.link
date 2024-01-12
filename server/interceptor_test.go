@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGRPCGateway_Match(t *testing.T) {
+func TestIsExpectingJSON(t *testing.T) {
 	t.Parallel()
 
 	for _, tc := range []struct {
@@ -53,14 +53,12 @@ func TestGRPCGateway_Match(t *testing.T) {
 				}
 			}
 
-			gw := &server.GRPCGateway{}
-
-			assert.Equal(t, tc.expected, gw.Match(req))
+			assert.Equal(t, tc.expected, server.IsExpectingJSON(req))
 		})
 	}
 }
 
-func TestGRPC_Match(t *testing.T) {
+func TestIsGRPC(t *testing.T) {
 	t.Parallel()
 
 	nr := func(hk, hv string, ver int) *http.Request {
@@ -101,9 +99,7 @@ func TestGRPC_Match(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			gr := server.GRPC{}
-
-			assert.Equal(t, tc.expected, gr.Match(tc.req))
+			assert.Equal(t, tc.expected, server.IsGRPC(tc.req))
 		})
 	}
 }
@@ -169,8 +165,7 @@ func TestH2C_Match(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			h2c := server.H2C{}
-			assert.Equal(t, tc.expected, h2c.Match(tc.req))
+			assert.Equal(t, tc.expected, server.IsH2C(tc.req))
 		})
 	}
 }
