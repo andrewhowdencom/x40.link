@@ -1,7 +1,10 @@
 package storage_test
 
 import (
+	"bytes"
 	"context"
+	"log"
+	"net"
 	"net/url"
 	"os/exec"
 	"sync"
@@ -42,8 +45,42 @@ var externalSinkFactories = map[string]func(string) storage.Storer{
 		// See https://medium.com/@felixge/killing-a-child-process-and-all-of-its-children-in-go-54079af94773
 		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 
+		// Save the STDOUT & STDERR
+		cmd.Stdout = &bytes.Buffer{}
+		cmd.Stderr = &bytes.Buffer{}
+
 		if err := cmd.Start(); err != nil {
 			panic(err)
+		}
+
+		// Wait for firestore to come up.
+		ctx, cxl := context.WithTimeout(context.Background(), time.Second*60)
+		defer cxl()
+
+		ticker := time.NewTicker(time.Second * 1)
+
+		i := 0
+	Wait:
+		for {
+			i++
+
+			select {
+			case <-ctx.Done():
+				log.Println("command output")
+				log.Println(cmd.Stdout.(*bytes.Buffer).String())
+				log.Println(cmd.Stderr.(*bytes.Buffer).String())
+
+				panic("waited for firebase to come up, but it did not")
+			case <-ticker.C:
+				conn, err := net.DialTimeout("tcp", "localhost:8500", time.Millisecond*500)
+				if err != nil {
+					log.Printf("tried to connect; failed: %s. attempt %d", err.Error(), i)
+				} else {
+					conn.Close()
+					log.Println("connection succeeded")
+					break Wait
+				}
+			}
 		}
 
 		// It takes a second for firestore to come up.

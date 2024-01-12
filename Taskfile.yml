@@ -182,7 +182,7 @@ tasks:
       CGO_ENABLED: 1
     desc: "Run the default set of unit tests"
     cmds:
-      - go test ./... -race -vet=all
+      - go test ./... -test.v -race -vet=all
 
   tools/go/install:
     desc: "Installs a series of go tools"
