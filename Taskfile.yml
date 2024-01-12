@@ -184,6 +184,13 @@ tasks:
     cmds:
       - go test ./... -test.v -race -vet=all
 
+  tools/apt/install:
+    desc: "Install a series of tools via aptitude"
+    cmds:
+      # Required for unit tests
+      - apt-get update
+      - apt-get install google-cloud-sdk-firestore-emulator
+
   tools/go/install:
     desc: "Installs a series of go tools"
     cmds:

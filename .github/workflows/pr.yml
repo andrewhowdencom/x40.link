@@ -1,8 +1,6 @@
 name: Validate
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
@@ -36,8 +34,14 @@ jobs:
     - name: Install Task
       uses: arduino/setup-task@v1
 
-    - name: "Install tools"
+    - name: "Install go tools"
       run: task tools/go/install
+
+    - name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v2'
+      with:
+        version: '>= 459.0.0'
+        install_components: 'cloud-firestore-emulator'
 
     # Validation
     - name: Try the build process

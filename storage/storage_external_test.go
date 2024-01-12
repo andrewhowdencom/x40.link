@@ -76,7 +76,8 @@ var externalSinkFactories = map[string]func(string) storage.Storer{
 				if err != nil {
 					log.Printf("tried to connect; failed: %s. attempt %d", err.Error(), i)
 				} else {
-					conn.Close()
+					// Error ignored as this is a test, and it will be shutdown anyway.
+					_ = conn.Close()
 					log.Println("connection succeeded")
 					break Wait
 				}
