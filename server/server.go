@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 // Option is a function type that modifies the behavior of the server
@@ -86,7 +87,7 @@ func WithGRPCGateway() Option {
 	return func(srv *http.Server) error {
 		mux := srv.Handler.(*chi.Mux)
 
-		mux.Use(Intercept(GRPCGateway{api.NewGRPCGatewayMux()}))
+		mux.Use(Intercept(IsExpectingJSON, api.NewGRPCGatewayMux()))
 
 		return nil
 	}
@@ -94,10 +95,15 @@ func WithGRPCGateway() Option {
 
 // WithH2C allows piping the connection to a HTTP/2 server, which will hijack the request to use the HTTP/2 protocol
 // but over the initially supplied connection.
-func WithH2C(h2 *http2.Server) Option {
+func WithH2C() Option {
 	return func(srv *http.Server) error {
 		mux := srv.Handler.(*chi.Mux)
-		mux.Use(Intercept(H2C{h2}))
+		mux.Use(Intercept(IsH2C, h2c.NewHandler(
+			mux,
+
+			// The
+			&http2.Server{},
+		)))
 
 		return nil
 	}
@@ -107,8 +113,7 @@ func WithH2C(h2 *http2.Server) Option {
 func WithGRPC() Option {
 	return func(srv *http.Server) error {
 		mux := srv.Handler.(*chi.Mux)
-
-		mux.Use(Intercept(GRPC{api.NewGRPCMux()}))
+		mux.Use(Intercept(IsGRPC, api.NewGRPCMux()))
 
 		return nil
 	}
