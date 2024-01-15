@@ -25,8 +25,8 @@ func NewGRPCGatewayMux() *runtime.ServeMux {
 }
 
 // NewGRPCMux generates a valid GRPC server with all GRPC routes configured.
-func NewGRPCMux() *grpc.Server {
-	m := grpc.NewServer()
+func NewGRPCMux(opts ...grpc.ServerOption) *grpc.Server {
+	m := grpc.NewServer(opts...)
 
 	dev.RegisterManageURLsServer(m, &dev.UnimplementedManageURLsServer{})
 
