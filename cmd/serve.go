@@ -95,16 +95,12 @@ func RunServe(cmd *cobra.Command, _ []string) error {
 		viper.GetString(configuration.ServerAPIHTTPHost),
 		viper.GetString(configuration.ServerAPIGRPCHost)
 
-	if jHost == "*" {
-		args = append(args, server.WithGRPCGateway())
-	} else if jHost != "" {
-		args = append(args, server.WithGRPCGateway(server.IsHost(jHost)))
+	if jHost != "" || cmd.Flags().Lookup(configuration.ServerAPIHTTPHost).Changed {
+		args = append(args, server.WithGRPCGateway(jHost, nil))
 	}
 
-	if gHost == "*" {
-		args = append(args, server.WithGRPC())
-	} else if gHost != "" {
-		args = append(args, server.WithGRPC(server.IsHost(gHost)))
+	if gHost != "" || cmd.Flags().Lookup(configuration.ServerAPIGRPCHost).Changed {
+		args = append(args, server.WithGRPC(gHost))
 	}
 
 	args = append(args,
