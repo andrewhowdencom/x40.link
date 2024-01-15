@@ -8,6 +8,7 @@ import (
 	"github.com/andrewhowdencom/x40.link/api/gen/dev"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 // NewGRPCGatewayMux provides a mux with all GRPC Gateway routes configured.
@@ -28,6 +29,8 @@ func NewGRPCMux() *grpc.Server {
 	m := grpc.NewServer()
 
 	dev.RegisterManageURLsServer(m, &dev.UnimplementedManageURLsServer{})
+
+	reflection.Register(m)
 
 	return m
 }
