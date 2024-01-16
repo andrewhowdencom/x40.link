@@ -20,7 +20,7 @@ func (o *strHandler) Redirect(w http.ResponseWriter, r *http.Request) {
 		Path: r.URL.Path,
 	}
 
-	red, err := o.str.Get(lookup)
+	red, err := o.str.Get(r.Context(), lookup)
 
 	if errors.Is(err, storage.ErrNotFound) {
 		WithError(r, problem.New(

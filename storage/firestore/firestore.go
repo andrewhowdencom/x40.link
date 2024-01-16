@@ -24,7 +24,7 @@ type Firestore struct {
 }
 
 // Get fetches a URL from storage
-func (fs Firestore) Get(url *url.URL) (*url.URL, error) {
+func (fs Firestore) Get(_ context.Context, url *url.URL) (*url.URL, error) {
 	ctx, cxl := context.WithTimeout(context.Background(), time.Second*30)
 	defer cxl()
 	ref := fs.Client.Doc(urlToPath(url))
@@ -60,7 +60,7 @@ func (fs Firestore) Get(url *url.URL) (*url.URL, error) {
 }
 
 // Put writes a URL into storage
-func (fs Firestore) Put(from *url.URL, to *url.URL) error {
+func (fs Firestore) Put(_ context.Context, from *url.URL, to *url.URL) error {
 	ref := fs.Client.Doc(urlToPath(from))
 
 	// Try and create the document

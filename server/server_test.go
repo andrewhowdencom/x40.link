@@ -1,6 +1,7 @@
 package server_test
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -80,7 +81,7 @@ func TestNewServer_WithStorage(t *testing.T) {
 	t.Parallel()
 
 	storage := test.New()
-	err := storage.Put(&url.URL{
+	err := storage.Put(context.Background(), &url.URL{
 		Host: "test",
 		Path: "/foo",
 	},

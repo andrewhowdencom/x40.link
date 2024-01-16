@@ -2,6 +2,7 @@ package yaml_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"log/slog"
@@ -95,7 +96,7 @@ func TestNewYaml(t *testing.T) {
 
 			// Validate State
 			for _, u := range tc.urls {
-				nu, err := y.Get(u.f)
+				nu, err := y.Get(context.Background(), u.f)
 				assert.ErrorIs(t, err, u.err)
 				assert.Equal(t, u.t, nu)
 			}
@@ -110,6 +111,7 @@ func TestYamlRejectWrite(t *testing.T) {
 	assert.Nil(t, err)
 
 	err = y.Put(
+		context.Background(),
 		&url.URL{Host: "x40", Path: "/foo"},
 		&url.URL{Host: "k3s", Path: "/bar"},
 	)

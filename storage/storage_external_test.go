@@ -131,14 +131,14 @@ func TestComplianceExternalAll(t *testing.T) {
 			defer externalSinkTeardown[n]("compliance")
 
 			// Query for a record that doesn't exit, to ensure the data store will not panic.
-			_, err := str.Get(&url.URL{Host: "x40"})
+			_, err := str.Get(context.Background(), &url.URL{Host: "x40"})
 
 			assert.ErrorIs(t, err, storage.ErrNotFound)
 
 			// Insert and query a record.
-			assert.Nil(t, str.Put(&url.URL{Host: "x40"}, &url.URL{Host: "andrewhowden.com"}))
+			assert.Nil(t, str.Put(context.Background(), &url.URL{Host: "x40"}, &url.URL{Host: "andrewhowden.com"}))
 
-			res, err := str.Get(&url.URL{
+			res, err := str.Get(context.Background(), &url.URL{
 				Host: "x40",
 			})
 

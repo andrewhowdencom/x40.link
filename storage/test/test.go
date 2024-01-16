@@ -2,6 +2,7 @@
 package test
 
 import (
+	"context"
 	"net/url"
 
 	"github.com/andrewhowdencom/x40.link/storage"
@@ -41,7 +42,7 @@ func WithError(err error) Option {
 }
 
 // see storage.Storer
-func (ts *ts) Get(u *url.URL) (*url.URL, error) {
+func (ts *ts) Get(_ context.Context, u *url.URL) (*url.URL, error) {
 	if ts.err != nil {
 		return nil, ts.err
 	}
@@ -54,7 +55,7 @@ func (ts *ts) Get(u *url.URL) (*url.URL, error) {
 }
 
 // see storage.Storer
-func (ts *ts) Put(f *url.URL, t *url.URL) error {
+func (ts *ts) Put(_ context.Context, f *url.URL, t *url.URL) error {
 	if ts.err != nil {
 		return ts.err
 	}

@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"net/url"
 	"sync"
 
@@ -65,7 +66,7 @@ func (bs *BinarySearch) find(in *url.URL) (found bool, nearest int) {
 }
 
 // Get returns an URL, given an input URL
-func (bs *BinarySearch) Get(in *url.URL) (*url.URL, error) {
+func (bs *BinarySearch) Get(_ context.Context, in *url.URL) (*url.URL, error) {
 	bs.mu.RLock()
 	defer bs.mu.RUnlock()
 
@@ -79,7 +80,7 @@ func (bs *BinarySearch) Get(in *url.URL) (*url.URL, error) {
 
 // Put writes the record into the set. Takes responsibility for determining the position in which to add the
 // new value, so that the underlying set retains order.
-func (bs *BinarySearch) Put(f *url.URL, t *url.URL) error {
+func (bs *BinarySearch) Put(_ context.Context, f *url.URL, t *url.URL) error {
 	bs.mu.Lock()
 	defer bs.mu.Unlock()
 

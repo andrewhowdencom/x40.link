@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"net/url"
 	"sync"
 
@@ -26,7 +27,7 @@ func NewHashTable() *HashTable {
 
 // Get fetches a URL. It looks it up in the hashmap by converting it to a string representation (which should be
 // unique), after which it will lookup the corresponding URL.
-func (ht *HashTable) Get(in *url.URL) (*url.URL, error) {
+func (ht *HashTable) Get(_ context.Context, in *url.URL) (*url.URL, error) {
 	ht.mu.RLock()
 	defer ht.mu.RUnlock()
 
@@ -39,7 +40,7 @@ func (ht *HashTable) Get(in *url.URL) (*url.URL, error) {
 
 // Put writes a URL into memory. Designed to be used primarily via "loader" infrastructure, such as the
 // YAML loader.
-func (ht *HashTable) Put(f *url.URL, t *url.URL) error {
+func (ht *HashTable) Put(_ context.Context, f *url.URL, t *url.URL) error {
 	ht.mu.Lock()
 	defer ht.mu.Unlock()
 
