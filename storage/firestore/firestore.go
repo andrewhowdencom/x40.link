@@ -75,8 +75,6 @@ func (fs Firestore) Put(ctx context.Context, from *url.URL, to *url.URL) error {
 		return storage.ErrUnauthorized
 	}
 
-	// Not found is fine; ownership is fine.
-
 	// Try and create the document
 	_, err = ref.Set(context.Background(), document{
 		To:    to.String(),

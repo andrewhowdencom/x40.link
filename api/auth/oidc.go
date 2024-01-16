@@ -4,9 +4,11 @@ package auth
 import (
 	"context"
 	"fmt"
-	"strings"
+	"regexp"
 
+	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/coreos/go-oidc/v3/oidc"
+	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -28,14 +30,15 @@ var (
 	ErrFailedToAuthenticate   = status.Error(codes.Unauthenticated, "unable to authenticate user")
 )
 
+var (
+	reBearer = regexp.MustCompile("(?i)Bearer ")
+)
+
 // OIDC provides an implementation for the OpenID method of verifying users.
 //
 // Only implements authentication (or "authn" — "who are you")
-//
-// TODO: Implement stream interface
 type OIDC struct {
-	Verifier     *oidc.IDTokenVerifier
-	NeededClaims map[string]map[string]interface{}
+	Verifier *oidc.IDTokenVerifier
 }
 
 // UnaryServerInterceptor provides the implementation of the OIDC handler
@@ -44,10 +47,10 @@ func (o *OIDC) UnaryServerInterceptor(
 	req any,
 	_ *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
-) (resp any, err error) {
-	isAuthenticated, err := o.authn(ctx)
+) (any, error) {
+	ctx, err := o.authn(ctx)
 
-	if !isAuthenticated {
+	if err != nil {
 		return nil, err
 	}
 
@@ -61,45 +64,52 @@ func (o *OIDC) StreamServerInterceptor(
 	_ *grpc.StreamServerInfo,
 	handler grpc.StreamHandler,
 ) error {
-	isAuthenticated, err := o.authn(context.Background())
+	ctx, err := o.authn(ss.Context())
 
-	if !isAuthenticated {
+	if err != nil {
 		return err
 	}
 
-	return handler(srv, ss)
+	wrappedStream := middleware.WrapServerStream(ss)
+	wrappedStream.WrappedContext = ctx
+
+	return handler(srv, wrappedStream)
 }
 
 // authn is the implementation of whether or not a given user is allowed to access a resource. Indicates
 // this by returning a bool, and if not allowed, an error describing why.
-func (o *OIDC) authn(ctx context.Context) (bool, error) {
+func (o *OIDC) authn(ctx context.Context) (context.Context, error) {
 	m, ok := metadata.FromIncomingContext(ctx)
+
 	if !ok {
-		return false, ErrMissingMetadata
+		return ctx, ErrMissingMetadata
 	}
 
 	v, ok := m[MetaKeyAuthorization]
 	if !ok {
-		return false, ErrMissingAuthorization
+		return ctx, ErrMissingAuthorization
 	}
 
 	if len(v) != 1 {
-		return false, ErrCorruptedAuthorization
+		return ctx, ErrCorruptedAuthorization
 	}
 
-	// TODO: Should be B|b
-	strTok, _ := strings.CutPrefix(v[0], "Bearer ")
+	// Strip bearer
+	strTok := reBearer.ReplaceAllString(v[0], "")
 
 	tok, err := o.Verifier.Verify(ctx, strTok)
 
 	if err != nil {
-		return false, fmt.Errorf("%w: %s", ErrFailedToAuthenticate, err)
+		return ctx, fmt.Errorf("%w: %s", ErrFailedToAuthenticate, err)
 	}
 
-	inClaims := make(map[string]interface{}, 0)
+	inClaims := struct {
+		Email string `json:"email"`
+	}{}
+
 	if err := tok.Claims(&inClaims); err != nil {
-		return false, fmt.Errorf("%w: %s", ErrFailedToAuthenticate, err)
+		return ctx, fmt.Errorf("%w: %s", ErrFailedToAuthenticate, err)
 	}
 
-	return true, nil
+	return context.WithValue(ctx, storage.CtxKeyAgent, "email:"+inClaims.Email), nil
 }
