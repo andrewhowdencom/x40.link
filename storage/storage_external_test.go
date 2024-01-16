@@ -186,6 +186,12 @@ func TestOwnership(t *testing.T) {
 			to, err := str.Get(thiefCtx, &url.URL{Host: "x40"})
 			assert.Nil(t, err)
 			assert.Equal(t, to.String(), (&url.URL{Host: "40x"}).String())
+
+			// Do not allow anonymous users to update the record
+			assert.ErrorIs(t,
+				str.Put(context.Background(), &url.URL{Host: "x40"}, &url.URL{Host: "x40"}),
+				storage.ErrUnauthorized,
+			)
 		})
 	}
 }
