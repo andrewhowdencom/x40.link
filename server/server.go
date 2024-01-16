@@ -13,6 +13,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
+	"google.golang.org/grpc"
 )
 
 // Option is a function type that modifies the behavior of the server
@@ -98,7 +99,7 @@ func WithH2C() Option {
 }
 
 // WithGRPC enables GRPC to be served over the
-func WithGRPC(host string) Option {
+func WithGRPC(host string, opts ...grpc.ServerOption) Option {
 	return func(srv *http.Server) error {
 		mux := srv.Handler.(*chi.Mux)
 		filters := []MatcherFunc{
@@ -110,7 +111,7 @@ func WithGRPC(host string) Option {
 			filters = append(filters, IsHost(host))
 		}
 
-		mux.Use(Intercept(AllOf(filters...), api.NewGRPCMux()))
+		mux.Use(Intercept(AllOf(filters...), api.NewGRPCMux(opts...)))
 
 		return nil
 	}

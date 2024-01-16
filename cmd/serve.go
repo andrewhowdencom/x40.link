@@ -8,6 +8,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/andrewhowdencom/sysexits"
+	"github.com/andrewhowdencom/x40.link/api/auth"
 	"github.com/andrewhowdencom/x40.link/configuration"
 	"github.com/andrewhowdencom/x40.link/server"
 	"github.com/andrewhowdencom/x40.link/storage"
@@ -15,9 +16,11 @@ import (
 	fsdb "github.com/andrewhowdencom/x40.link/storage/firestore"
 	"github.com/andrewhowdencom/x40.link/storage/memory"
 	"github.com/andrewhowdencom/x40.link/storage/yaml"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 )
 
 // Sentinal errors
@@ -64,6 +67,9 @@ func init() {
 	// API configuration
 	serveFlagSet.StringP(configuration.ServerAPIGRPCHost, "g", "", "The host on which to listen for GRPC requests")
 
+	serveFlagSet.String(configuration.OAuth2ClientID, "", "What OAuth Client ID should be used to validate tokens")
+	serveFlagSet.String(configuration.OIDCProviderEndpoint, "", "What OIDC provider endpoint to validate against")
+
 	// Protocol configuration
 	serveFlagSet.BoolP(configuration.ServerH2CEnabled, "c", true, "Whether to enable HTTP/2 cleartext (with prior knowledge)")
 
@@ -75,6 +81,9 @@ func init() {
 	serveCmd.Flags().AddFlagSet(serveFlagSet)
 	serveCmd.MarkFlagsOneRequired(storageFlags...)
 	serveCmd.MarkFlagsMutuallyExclusive(storageFlags...)
+
+	serveCmd.MarkFlagsRequiredTogether(configuration.OAuth2ClientID, configuration.OIDCProviderEndpoint)
+
 }
 
 // RunServe implements the run server command
@@ -91,9 +100,27 @@ func RunServe(cmd *cobra.Command, _ []string) error {
 	}
 
 	apiHost := viper.GetString(configuration.ServerAPIGRPCHost)
+	apiOpts := []grpc.ServerOption{}
+
+	// Authentication.
+	if viper.GetString(configuration.OAuth2ClientID) != "" || viper.GetString(configuration.OIDCProviderEndpoint) != "" {
+		// TODO: Figure out the map. Also, ownership.
+		provider, err := oidc.NewProvider(cmd.Context(), viper.GetString(configuration.OIDCProviderEndpoint))
+		if err != nil {
+			return fmt.Errorf("%w: %s", sysexits.Config, err)
+		}
+
+		oidc := &auth.OIDC{Verifier: provider.Verifier(&oidc.Config{ClientID: viper.GetString(configuration.OAuth2ClientID)})}
+
+		apiOpts = append(
+			apiOpts,
+			grpc.UnaryInterceptor(oidc.UnaryServerInterceptor),
+			grpc.StreamInterceptor(oidc.StreamServerInterceptor),
+		)
+	}
 
 	if apiHost != "" || cmd.Flags().Lookup(configuration.ServerAPIGRPCHost).Changed {
-		args = append(args, server.WithGRPC(apiHost))
+		args = append(args, server.WithGRPC(apiHost, apiOpts...))
 	}
 
 	args = append(args,
