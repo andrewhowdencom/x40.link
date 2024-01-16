@@ -9,55 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIsExpectingJSON(t *testing.T) {
-	t.Parallel()
-
-	for _, tc := range []struct {
-		name string
-
-		headers http.Header
-
-		expected bool
-	}{
-		{
-			name: "application/json",
-			headers: http.Header{
-				"accept": {
-					"application/json",
-				},
-			},
-			expected: true,
-		},
-		{
-			name: "text/html",
-			headers: http.Header{
-				"accept": {
-					"text/json",
-				},
-			},
-			expected: false,
-		},
-		{
-			name:     "nothing",
-			expected: false,
-		},
-	} {
-		tc := tc
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			req, _ := http.NewRequest("GET", "/", nil)
-			for k, s := range tc.headers {
-				for _, v := range s {
-					req.Header.Add(k, v)
-				}
-			}
-
-			assert.Equal(t, tc.expected, server.IsExpectingJSON(req))
-		})
-	}
-}
-
 func TestIsGRPC(t *testing.T) {
 	t.Parallel()
 

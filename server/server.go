@@ -81,33 +81,6 @@ func WithStorage(str storage.Storer) Option {
 	}
 }
 
-// WithGRPCGateway configures an interceptor to offload requests to the GRPC Gateway mux. Must be used before
-// any option that creates a route (e.g. WithStorage)
-func WithGRPCGateway(host string, middleware func(http.Handler) http.Handler) Option {
-	return func(srv *http.Server) error {
-		var handler http.Handler = api.NewGRPCGatewayMux()
-
-		mux := srv.Handler.(*chi.Mux)
-		filters := []MatcherFunc{
-			IsExpectingJSON,
-		}
-
-		// Allow the GRPC Gateway to filter to specific hosts, if required.
-		if host != "" {
-			filters = append(filters, IsHost(host))
-		}
-
-		// Allow the gRPC Gateway to have additional middleware (e.g. auth), if required.
-		if middleware != nil {
-			handler = middleware(handler)
-		}
-
-		mux.Use(Intercept(AllOf(filters...), handler))
-
-		return nil
-	}
-}
-
 // WithH2C allows piping the connection to a HTTP/2 server, which will hijack the request to use the HTTP/2 protocol
 // but over the initially supplied connection.
 func WithH2C() Option {

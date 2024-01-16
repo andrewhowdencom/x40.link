@@ -62,8 +62,7 @@ func init() {
 	serveFlagSet.StringP(configuration.StorageFirestoreProject, "f", "", "Use the firestore database at project <input>")
 
 	// API configuration
-	serveFlagSet.StringP(configuration.ServerAPIGRPCHost, "g", "", "The host on which to listen for GRPC requests (* for all)")
-	serveFlagSet.StringP(configuration.ServerAPIHTTPHost, "j", "", "The host on which to listen to HTTP+JSON requests (* for all)")
+	serveFlagSet.StringP(configuration.ServerAPIGRPCHost, "g", "", "The host on which to listen for GRPC requests")
 
 	// Protocol configuration
 	serveFlagSet.BoolP(configuration.ServerH2CEnabled, "c", true, "Whether to enable HTTP/2 cleartext (with prior knowledge)")
@@ -91,16 +90,10 @@ func RunServe(cmd *cobra.Command, _ []string) error {
 		args = append(args, server.WithH2C())
 	}
 
-	jHost, gHost :=
-		viper.GetString(configuration.ServerAPIHTTPHost),
-		viper.GetString(configuration.ServerAPIGRPCHost)
+	apiHost := viper.GetString(configuration.ServerAPIGRPCHost)
 
-	if jHost != "" || cmd.Flags().Lookup(configuration.ServerAPIHTTPHost).Changed {
-		args = append(args, server.WithGRPCGateway(jHost, nil))
-	}
-
-	if gHost != "" || cmd.Flags().Lookup(configuration.ServerAPIGRPCHost).Changed {
-		args = append(args, server.WithGRPC(gHost))
+	if apiHost != "" || cmd.Flags().Lookup(configuration.ServerAPIGRPCHost).Changed {
+		args = append(args, server.WithGRPC(apiHost))
 	}
 
 	args = append(args,

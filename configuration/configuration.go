@@ -4,7 +4,6 @@ package configuration
 // Server* is configuration that modifies how the server is run
 const (
 	ServerListenAddress = "server.listen-address"
-	ServerAPIHTTPHost   = "server.api.http.host"
 	ServerAPIGRPCHost   = "server.api.grpc.host"
 
 	ServerH2CEnabled = "server.protocol.h2c.enabled"

@@ -29,14 +29,6 @@ func IsHost(host string) MatcherFunc {
 	}
 }
 
-// IsExpectingJSON indicates that a request is looking to expect JSON. In practice, this is used to redirect
-// to the gRPC API
-func IsExpectingJSON(r *http.Request) bool {
-	// There is nothing else on this server that is expecting a JSON response. Given this, forward everything
-	// JSON related to the handler.
-	return r.Header.Get(message.HeaderAccept) == message.MIMEApplicationJSON
-}
-
 // IsGRPC offloads requests to the gRPC mux. Note: This does not use a bunch of GRPC features; that's fine.
 //
 // See
