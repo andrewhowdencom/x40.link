@@ -21,6 +21,7 @@ message PutRequest {
     string to = 2;
 }
 
+// TODO: Authentication should be an emergent property of these definitions.
 service ManageURLs {
     // Get queries a URL, returning the URL if there was found (or none, if it was not found)
     rpc Get(Request) returns (Response) {}
