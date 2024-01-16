@@ -4,7 +4,6 @@ package auth
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -62,7 +61,7 @@ func (o *OIDC) StreamServerInterceptor(
 	_ *grpc.StreamServerInfo,
 	handler grpc.StreamHandler,
 ) error {
-	isAuthenticated, err := o.authn(ss.Context())
+	isAuthenticated, err := o.authn(context.Background())
 
 	if !isAuthenticated {
 		return err
@@ -75,10 +74,6 @@ func (o *OIDC) StreamServerInterceptor(
 // this by returning a bool, and if not allowed, an error describing why.
 func (o *OIDC) authn(ctx context.Context) (bool, error) {
 	m, ok := metadata.FromIncomingContext(ctx)
-
-	log.Println(m)
-	log.Printf("%#v", ctx)
-
 	if !ok {
 		return false, ErrMissingMetadata
 	}
