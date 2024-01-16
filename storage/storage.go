@@ -13,6 +13,7 @@ var (
 	ErrReadOnlyStorage    = errors.New("storage is read only")
 	ErrFailed             = errors.New("storage implementation failed")
 	ErrCorrupt            = errors.New("the data returned by the storage is invalid")
+	ErrUnauthorized       = errors.New("you are not the owner of this record")
 )
 
 // CtxKey is a type designed to allow delimiting key/value pairs

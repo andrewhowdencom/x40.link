@@ -118,8 +118,6 @@ var externalSinkTeardown = map[string]func(string){
 	},
 }
 
-// race is designed to stress the storage by using it concurrently, such that the go race detector can
-
 // TestComplianceAll tests that the storages actually store and retrieve valid records in the (simplest) expected ways.
 func TestComplianceExternalAll(t *testing.T) {
 	for n, f := range externalSinkFactories {
@@ -146,6 +144,48 @@ func TestComplianceExternalAll(t *testing.T) {
 			assert.Equal(t, &url.URL{
 				Host: "andrewhowden.com",
 			}, res)
+		})
+	}
+}
+
+func TestOwnership(t *testing.T) {
+	for _, k := range []string{
+		"firestore",
+	} {
+		k := k
+		t.Run(k, func(t *testing.T) {
+			str := externalSinkFactories[k]("ownership")
+			defer externalSinkTeardown[k]("ownership")
+
+			auth, isAuthenticator := str.(storage.Authenticator)
+
+			assert.Truef(t, isAuthenticator, "supplied storer does not authenticate")
+
+			// Write the context into the store
+			ownerCtx := context.WithValue(context.Background(), storage.CtxKeyAgent, "email:user1@example.com")
+			thiefCtx := context.WithValue(context.Background(), storage.CtxKeyAgent, "email:user2@example.com")
+
+			// Write a record into the datastore
+			err := str.Put(ownerCtx, &url.URL{Host: "x40"}, &url.URL{Host: "x40"})
+			assert.Nil(t, err)
+
+			assert.True(t, auth.Owns(ownerCtx, &url.URL{Host: "x40"}))
+			assert.False(t, auth.Owns(thiefCtx, &url.URL{Host: "x40"}))
+
+			// Try and update the record as the thief
+			assert.ErrorIs(
+				t,
+				str.Put(thiefCtx, &url.URL{Host: "x40"}, &url.URL{Host: "x40"}),
+				storage.ErrUnauthorized,
+			)
+
+			// Try and update the error as the user
+			assert.Nil(t, str.Put(ownerCtx, &url.URL{Host: "x40"}, &url.URL{Host: "40x"}))
+
+			// Allow all users to read URLs
+			to, err := str.Get(thiefCtx, &url.URL{Host: "x40"})
+			assert.Nil(t, err)
+			assert.Equal(t, to.String(), (&url.URL{Host: "40x"}).String())
 		})
 	}
 }
