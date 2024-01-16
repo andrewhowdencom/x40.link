@@ -23,24 +23,11 @@ message PutRequest {
 
 service ManageURLs {
     // Get queries a URL, returning the URL if there was found (or none, if it was not found)
-    rpc Get(Request) returns (Response) {
-        option (google.api.http) = {
-            get: "/dev/url"
-        };
-    }
+    rpc Get(Request) returns (Response) {}
 
     // Post generates a new URL with a generated suffix.
-    rpc Post(Request) returns (Response) {
-        option (google.api.http) = {
-            post: "/dev/url"
-            body: "*"
-        };
-    }
+    rpc Post(Request) returns (Response) {}
 
-    rpc Put(PutRequest) returns (google.protobuf.Empty) {
-        option (google.api.http) = {
-            put: "/dev/url"
-            body: "*"
-        };
-    }
+    // Put writes a new URL to the store
+    rpc Put(PutRequest) returns (google.protobuf.Empty) {}
 }
