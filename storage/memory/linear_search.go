@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"net/url"
 	"sync"
 
@@ -24,7 +25,7 @@ func NewLinearSearch() *LinearSearch {
 }
 
 // Get queries the linear search. It just iterates through the whole slice.
-func (s *LinearSearch) Get(in *url.URL) (*url.URL, error) {
+func (s *LinearSearch) Get(_ context.Context, in *url.URL) (*url.URL, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -38,7 +39,7 @@ func (s *LinearSearch) Get(in *url.URL) (*url.URL, error) {
 }
 
 // Put writes the URL into storage, appending it to the slice.
-func (s *LinearSearch) Put(f *url.URL, t *url.URL) error {
+func (s *LinearSearch) Put(_ context.Context, f *url.URL, t *url.URL) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 

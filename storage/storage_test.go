@@ -1,6 +1,7 @@
 package storage_test
 
 import (
+	"context"
 	"encoding/base64"
 	"errors"
 	"math/rand"
@@ -77,7 +78,7 @@ func benchmark(b *testing.B, str storage.Storer, iter int) {
 		}
 		urls = append(urls, next)
 
-		if err := str.Put(next, dest); err != nil {
+		if err := str.Put(context.Background(), next, dest); err != nil {
 			b.Log(err)
 			b.FailNow()
 		}
@@ -86,7 +87,7 @@ func benchmark(b *testing.B, str storage.Storer, iter int) {
 	// Iterate through the whole list, finding them all. The actual benchmark.
 	b.ResetTimer()
 	for _, u := range urls {
-		if _, err := str.Get(u); err != nil {
+		if _, err := str.Get(context.Background(), u); err != nil {
 			b.Log(err)
 			b.FailNow()
 		}
@@ -100,7 +101,7 @@ func race(str storage.Storer) {
 		go func() {
 			// If the number is divisible by 4 (which it should be, 25% of the time) then make it a write operation.
 			if rand.Int()%4 == 0 {
-				if err := str.Put(&url.URL{
+				if err := str.Put(context.Background(), &url.URL{
 					Host: "x40",
 				}, &url.URL{
 					Host: "k3s",
@@ -108,7 +109,7 @@ func race(str storage.Storer) {
 					panic(err)
 				}
 			} else {
-				if _, err := str.Get(&url.URL{
+				if _, err := str.Get(context.Background(), &url.URL{
 					Host: "x40",
 				}); err != nil && !errors.Is(err, storage.ErrNotFound) {
 					panic(err)
@@ -173,13 +174,13 @@ func TestComplianceAll(t *testing.T) {
 			defer teardownFunc[n]("compliance")
 
 			// Query for a record that doesn't exit, to ensure the data store will not panic.
-			_, err := str.Get(&url.URL{Host: "x40"})
+			_, err := str.Get(context.Background(), &url.URL{Host: "x40"})
 			assert.ErrorIs(t, err, storage.ErrNotFound)
 
 			// Insert and query a record.
-			assert.Nil(t, str.Put(&url.URL{Host: "x40"}, &url.URL{Host: "andrewhowden.com"}))
+			assert.Nil(t, str.Put(context.Background(), &url.URL{Host: "x40"}, &url.URL{Host: "andrewhowden.com"}))
 
-			res, err := str.Get(&url.URL{
+			res, err := str.Get(context.Background(), &url.URL{
 				Host: "x40",
 			})
 

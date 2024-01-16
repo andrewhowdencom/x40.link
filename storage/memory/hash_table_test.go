@@ -1,6 +1,7 @@
 package memory_test
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/url"
@@ -34,7 +35,7 @@ func ExampleNewHashTable() {
 		from, _ := url.Parse(tu.f)
 		to, _ := url.Parse(tu.t)
 
-		err := ht.Put(from, to)
+		err := ht.Put(context.Background(), from, to)
 		if err != nil {
 			log.Println(err)
 		}
@@ -44,7 +45,7 @@ func ExampleNewHashTable() {
 	l, _ := url.Parse("x40/a")
 
 	// Normally, we should handle the error from the fetch operation (e.g. not found)
-	ret, _ := ht.Get(l)
+	ret, _ := ht.Get(context.Background(), l)
 	fmt.Println(ret.String())
 	// Output: andrewhowden.com/a
 }
@@ -54,13 +55,13 @@ func TestNewHashTable(t *testing.T) {
 	t.Parallel()
 
 	ht := memory.NewHashTable()
-	assert.Nil(t, ht.Put(&url.URL{
+	assert.Nil(t, ht.Put(context.Background(), &url.URL{
 		Host: "x40",
 	}, &url.URL{
 		Host: "andrewhowden.com",
 	}))
 
-	res, err := ht.Get(&url.URL{
+	res, err := ht.Get(context.Background(), &url.URL{
 		Host: "x40",
 	})
 

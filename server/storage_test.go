@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -41,6 +42,7 @@ func TestStoreHandler_Get(t *testing.T) {
 			storage: func() storage.Storer {
 				str := test.New()
 				test.Must(str.Put(
+					context.Background(),
 					&url.URL{Host: "s3k", Path: "/foo"},
 					&url.URL{Scheme: "https", Host: "andrewhowden.com", Path: "/"},
 				))

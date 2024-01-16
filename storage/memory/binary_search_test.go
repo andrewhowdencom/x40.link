@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"net/url"
 	"slices"
 	"testing"
@@ -19,7 +20,7 @@ func TestBinarySearchPutOrder(t *testing.T) {
 		"aiquu4Ev", "Aing2OhD", "YooJooz7"}
 
 	for _, slug := range slugs {
-		err := bs.Put(&url.URL{
+		err := bs.Put(context.Background(), &url.URL{
 			Host: "x40", Path: "/" + slug,
 		}, &url.URL{
 			Host: "andrewhowden.com", Path: "/tests",

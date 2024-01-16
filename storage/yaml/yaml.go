@@ -1,6 +1,7 @@
 package yaml
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -61,7 +62,7 @@ func New(str storage.Storer, src io.Reader) (*yaml, error) {
 
 		fmt.Println(from.String(), to.String())
 
-		if err := y.str.Put(from, to); err != nil {
+		if err := y.str.Put(context.Background(), from, to); err != nil {
 			return nil, fmt.Errorf("%w: %s", storage.ErrStorageSetupFailed, err)
 		}
 	}
@@ -69,10 +70,10 @@ func New(str storage.Storer, src io.Reader) (*yaml, error) {
 	return y, nil
 }
 
-func (y *yaml) Get(u *url.URL) (*url.URL, error) {
-	return y.str.Get(u)
+func (y *yaml) Get(ctx context.Context, u *url.URL) (*url.URL, error) {
+	return y.str.Get(ctx, u)
 }
 
-func (y *yaml) Put(*url.URL, *url.URL) error {
+func (y *yaml) Put(context.Context, *url.URL, *url.URL) error {
 	return storage.ErrReadOnlyStorage
 }

@@ -2,6 +2,7 @@
 package boltdb
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -72,7 +73,7 @@ func WithFileLockWait(dur time.Duration) Option {
 }
 
 // Get returns a URL, given another input URL
-func (b *BoltDB) Get(in *url.URL) (*url.URL, error) {
+func (b *BoltDB) Get(_ context.Context, in *url.URL) (*url.URL, error) {
 	var u *url.URL
 
 	if err := b.db.View(func(tx *bbolt.Tx) error {
@@ -102,7 +103,7 @@ func (b *BoltDB) Get(in *url.URL) (*url.URL, error) {
 }
 
 // Put saves a URL to the datastore
-func (b *BoltDB) Put(f *url.URL, t *url.URL) error {
+func (b *BoltDB) Put(_ context.Context, f *url.URL, t *url.URL) error {
 	return b.db.Update(func(tx *bbolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists(txBucketName)
 		if err != nil {
