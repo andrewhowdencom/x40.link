@@ -1,6 +1,8 @@
 # @.link
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/andrewhowdencom/x40.link.svg)](https://pkg.go.dev/github.com/andrewhowdencom/x40.link)
+ . [![build:x40.link](https://github.com/andrewhowdencom/x40.link/actions/workflows/main+x40.link.yml/badge.svg)](https://github.com/andrewhowdencom/x40.link/actions/workflows/main+x40.link.yml)
+ · [![build:documentation](https://github.com/andrewhowdencom/x40.link/actions/workflows/main+documentation.yml/badge.svg)](https://github.com/andrewhowdencom/x40.link/actions/workflows/main+documentation.yml)
 
 The short link service. Named `x40`, it represents the hex for the "@" character. Created as firebase is [going away]. 
 Learn more via the [documentation]
