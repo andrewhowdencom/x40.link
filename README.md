@@ -10,6 +10,12 @@ Learn more via the [documentation]
 [going away]: https://firebase.google.com/support/dynamic-links-faq
 [documentation]: https://www.x40.dev
 
+## Usage
+
+Probably, do not, at this point. I'm working on this project instead of full-time work; however, the stability of this
+project is shaky at best. I'm stabilizing this solution's network APIs and client implementations
+before the code solution is even reasonably stable.
+
 ## Understanding this work
 
 This project functions as a demonstration of work. In the future, I will likely cannibalize it for the
