@@ -23,6 +23,7 @@ api/openapi
 # vendor/
 deploy/prod/tf/.terraform
 deploy/gh/tf/.terraform
+deploy/a0/tf/.terraform
 
 # Go workspace file
 go.work

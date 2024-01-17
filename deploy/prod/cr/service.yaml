@@ -29,8 +29,8 @@ spec:
             # See https://www.oauth.com/oauth2-servers/client-registration/client-id-secret/
             #
             # TODO: Secret management for this application.
-            - "--oauth2.client.id=566795814325-k8e5toq16v5plsq54kg2shvtuj9q7vtv.apps.googleusercontent.com"
-            - "--oidc.provider.endpoint=https://accounts.google.com"
+            - "--oauth2.client.id=FH72Qo7CrVKE9hr71cHYKbLimKAobMot"
+            - "--oidc.provider.endpoint=https://x40.eu.auth0.com/"
           ports:
           # Naming the port H2C gives a hint to Google Clouds load balancing infrastructure that this application
           # supports HTTP/2 without TLS.
