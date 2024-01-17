@@ -99,7 +99,7 @@ func WithH2C() Option {
 }
 
 // WithGRPC enables GRPC to be served over the
-func WithGRPC(host string, opts ...grpc.ServerOption) Option {
+func WithGRPC(storer storage.Storer, host string, opts ...grpc.ServerOption) Option {
 	return func(srv *http.Server) error {
 		mux := srv.Handler.(*chi.Mux)
 		filters := []MatcherFunc{
@@ -111,7 +111,7 @@ func WithGRPC(host string, opts ...grpc.ServerOption) Option {
 			filters = append(filters, IsHost(host))
 		}
 
-		mux.Use(Intercept(AllOf(filters...), api.NewGRPCMux(opts...)))
+		mux.Use(Intercept(AllOf(filters...), api.NewGRPCMux(storer, opts...)))
 
 		return nil
 	}

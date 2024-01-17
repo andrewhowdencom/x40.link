@@ -120,7 +120,7 @@ func RunServe(cmd *cobra.Command, _ []string) error {
 	}
 
 	if apiHost != "" || cmd.Flags().Lookup(configuration.ServerAPIGRPCHost).Changed {
-		args = append(args, server.WithGRPC(apiHost, apiOpts...))
+		args = append(args, server.WithGRPC(str, apiHost, apiOpts...))
 	}
 
 	args = append(args,

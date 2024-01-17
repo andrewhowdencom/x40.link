@@ -13,12 +13,13 @@ vars:
 tasks:
   bin:
     desc: "Build a go binary specific to an architecture and operating system"
+    deps:
+      - "protobuf/generate"
     requires:
       vars: [GOOS, GOARCH]
     cmds:
       # Generate the required files
       - mkdir -p "dist/{{ .GOOS }}+{{ .GOARCH }}"
-      - cd api && buf generate
       - go build -o "dist/{{ .GOOS }}+{{ .GOARCH }}/x40.link{{ exeExt }}"
 
   bin/all:
@@ -151,6 +152,12 @@ tasks:
     dir: "./docs"
     cmds:
       - "poetry run mkdocs serve"
+
+  protobuf/generate:
+    desc: "Generates the code required to interact with protobuf definitions"
+    cmds:
+      - cd api && buf generate
+
 
   tofu/plan:
     desc: "Plan the infrastructure changes, and validate their output"
