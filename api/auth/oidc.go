@@ -22,6 +22,29 @@ const (
 	MetaKeyAuthorization = "authorization"
 )
 
+// CtxKey is a type just to prevent collisions
+type CtxKey string
+
+// CtxKey* are context keys specific to this auth package.
+const (
+	CtxKeyRoles CtxKey = "roles"
+)
+
+type claims struct {
+	Email string   `json:"email"`
+	Roles []string `json:"x40.link/roles"`
+}
+
+// Role* are the roles this service supports.
+const (
+	// RoleAPIUser is an intermediary role meaning "Can use the API".
+	RoleAPIUser = "https://x40.link/roles/api-user"
+)
+
+var allowedRoles = map[string]bool{
+	RoleAPIUser: true,
+}
+
 // Err* are sentinel errors
 var (
 	ErrMissingMetadata        = status.Error(codes.InvalidArgument, "missing metadata")
@@ -103,13 +126,25 @@ func (o *OIDC) authn(ctx context.Context) (context.Context, error) {
 		return ctx, fmt.Errorf("%w: %s", ErrFailedToAuthenticate, err)
 	}
 
-	inClaims := struct {
-		Email string `json:"email"`
-	}{}
+	inClaims := &claims{}
 
 	if err := tok.Claims(&inClaims); err != nil {
 		return ctx, fmt.Errorf("%w: %s", ErrFailedToAuthenticate, err)
 	}
 
-	return context.WithValue(ctx, storage.CtxKeyAgent, "email:"+inClaims.Email), nil
+	hasRole := false
+
+	for _, r := range inClaims.Roles {
+		if _, ok := allowedRoles[r]; ok {
+			hasRole = true
+		}
+	}
+
+	if !hasRole {
+		return ctx, fmt.Errorf("%w: %s", ErrFailedToAuthenticate, "required role missing")
+	}
+
+	ctx = context.WithValue(ctx, storage.CtxKeyAgent, "email:"+inClaims.Email)
+
+	return ctx, nil
 }
