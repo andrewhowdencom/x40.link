@@ -3,16 +3,18 @@
 package api
 
 import (
-	"github.com/andrewhowdencom/x40.link/api/gen/dev"
+	"github.com/andrewhowdencom/x40.link/api/dev"
+	gendev "github.com/andrewhowdencom/x40.link/api/gen/dev"
+	"github.com/andrewhowdencom/x40.link/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
 
 // NewGRPCMux generates a valid GRPC server with all GRPC routes configured.
-func NewGRPCMux(opts ...grpc.ServerOption) *grpc.Server {
+func NewGRPCMux(storer storage.Storer, opts ...grpc.ServerOption) *grpc.Server {
 	m := grpc.NewServer(opts...)
 
-	dev.RegisterManageURLsServer(m, &dev.UnimplementedManageURLsServer{})
+	gendev.RegisterManageURLsServer(m, &dev.URL{Storer: storer})
 
 	reflection.Register(m)
 
