@@ -9,20 +9,48 @@ import (
 
 	"github.com/andrewhowdencom/x40.link/api/gen/dev"
 	"github.com/andrewhowdencom/x40.link/storage"
+	"github.com/andrewhowdencom/x40.link/uid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
+
+// URLEnricher are defaults applied when the user doesn't supply that information.
+type URLEnricher struct {
+	Domain string
+	Path   *uid.Generator
+}
+
+// Enrich adds information to the provided URL if it is not already present.
+func (u *URLEnricher) Enrich(from *url.URL, to *url.URL) error {
+	if from.Host == "" {
+		from.Host = u.Domain
+	}
+
+	if from.Path != "" {
+		return nil
+	}
+
+	id, err := u.Path.ID(to)
+	if err != nil {
+		return err
+	}
+
+	from.Path = "/" + id
+
+	return nil
+}
 
 // URL is an implementation of the URL gRPC Server
 type URL struct {
 	Storer storage.Storer
 
+	Enricher func(from *url.URL, to *url.URL) error
+
 	dev.UnimplementedManageURLsServer
 }
 
 // Get fetches a URL from storage
-func (u URL) Get(ctx context.Context, req *dev.Request) (*dev.Response, error) {
+func (u URL) Get(ctx context.Context, req *dev.GetRequest) (*dev.Response, error) {
 	url, err := url.Parse(req.Url)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "url parse failure: %s", err)
@@ -44,25 +72,26 @@ func (u URL) Get(ctx context.Context, req *dev.Request) (*dev.Response, error) {
 	}, nil
 }
 
-// New generates the "from" URL on the fly, based on request metadata.
-func (URL) New(context.Context, *dev.Request) (*dev.Response, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Post not implemented")
-}
-
-// NewCustom writes a new URL into storage
-func (u URL) NewCustom(ctx context.Context, req *dev.CustomRequest) (*emptypb.Empty, error) {
-	urls := [2]*url.URL{}
-
-	for i, v := range []string{req.From, req.To} {
-		url, err := url.Parse(v)
-		if err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "url parse failure: %s", err)
-		}
-
-		urls[i] = url
+// New generates the "from" URL on the fly
+func (u URL) New(ctx context.Context, req *dev.NewRequest) (*dev.Response, error) {
+	to, err := url.Parse(req.SendTo)
+	if err != nil {
+		return nil, status.Errorf(codes.InvalidArgument, "url parse failure: %s", err)
 	}
 
-	err := u.Storer.Put(ctx, urls[0], urls[1])
+	from := &url.URL{}
+	if req.On != nil {
+		from.Host = req.On.Host
+		from.Path = req.On.Path
+	}
+
+	// Add information if it is not there.
+	if err := u.Enricher(from, to); err != nil {
+		log.Println(err)
+		return nil, status.Error(codes.Internal, "unable to add missing information")
+	}
+
+	err = u.Storer.Put(ctx, from, to)
 
 	if errors.Is(err, storage.ErrUnauthorized) {
 		return nil, status.Error(codes.PermissionDenied, "you are not the owner of this record")
@@ -71,5 +100,7 @@ func (u URL) NewCustom(ctx context.Context, req *dev.CustomRequest) (*emptypb.Em
 		return nil, status.Errorf(codes.Internal, "failed to write to storage")
 	}
 
-	return &emptypb.Empty{}, nil
+	return &dev.Response{
+		Url: from.String(),
+	}, nil
 }

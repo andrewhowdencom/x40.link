@@ -5,8 +5,16 @@ option go_package = "github.com/andrewhowdencom/x40/api/gen/dev";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
-// Request
-message Request {
+// URL is a type representing the URL that should be created.
+//
+// The definition expects any fields that are missing to be generated on the server side.
+message RedirectOn {
+    string host = 1;
+    string path = 2;
+}
+
+// GetRequest fetches a URL
+message GetRequest {
     string url = 1;
 }
 
@@ -14,20 +22,19 @@ message Response {
     string url = 1;
 }
 
-message CustomRequest {
-    string from = 1;
-    string to = 2;
+// NewRequest generates a URL at the desired domain.
+message NewRequest {
+    RedirectOn on = 1;
+    string sendTo = 2;
 }
+
 
 // TODO: Authentication should be an emergent property of these definitions.
 // Come back to when looking at ReBAC
 service ManageURLs {
     // Get queries a URL, returning the URL if there was found (or none, if it was not found)
-    rpc Get(Request) returns (Response) {}
+    rpc Get(GetRequest) returns (Response) {}
 
     // Post generates a new URL with a generated suffix.
-    rpc New(Request) returns (Response) {}
-
-    // Put writes a new URL to the store
-    rpc NewCustom(CustomRequest) returns (google.protobuf.Empty) {}
+    rpc New(NewRequest) returns (Response) {}
 }
