@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/andrewhowdencom/x40.link/api/auth/tokens"
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/coreos/go-oidc/v3/oidc"
 	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
@@ -30,13 +31,11 @@ const (
 	CtxKeyRoles CtxKey = "roles"
 )
 
-type claims struct {
-	Email string   `json:"email"`
-	Roles []string `json:"x40.link/roles"`
-}
-
 // Role* are the roles this service supports.
 const (
+	// RoleNamespace is the claim namespace that other roles are nested under (in an array)
+	RoleNamespace = "x40.link/roles"
+
 	// RoleAPIUser is an intermediary role meaning "Can use the API".
 	RoleAPIUser = "https://x40.link/roles/api-user"
 )
@@ -71,7 +70,7 @@ func (o *OIDC) UnaryServerInterceptor(
 	_ *grpc.UnaryServerInfo,
 	handler grpc.UnaryHandler,
 ) (any, error) {
-	ctx, err := o.authn(ctx)
+	ctx, err := o.VerifyCtx(ctx)
 
 	if err != nil {
 		return nil, err
@@ -87,7 +86,7 @@ func (o *OIDC) StreamServerInterceptor(
 	_ *grpc.StreamServerInfo,
 	handler grpc.StreamHandler,
 ) error {
-	ctx, err := o.authn(ss.Context())
+	ctx, err := o.VerifyCtx(ss.Context())
 
 	if err != nil {
 		return err
@@ -99,26 +98,37 @@ func (o *OIDC) StreamServerInterceptor(
 	return handler(srv, wrappedStream)
 }
 
-// authn is the implementation of whether or not a given user is allowed to access a resource. Indicates
-// this by returning a bool, and if not allowed, an error describing why.
-func (o *OIDC) authn(ctx context.Context) (context.Context, error) {
+// VerifyCtx verifies that a supplied context includes the appropriate bearer token, that the token is valid
+// and can be verified against the verifier and returns a context enriched with relevant information from
+// the verification process.
+//
+// The OIDC Verifier does some standard match checks, such as:
+//
+// 1. The issuer
+// 2. The audience (or ClientID)
+// 3. The expiry of the token
+// 4. The signature
+func (o *OIDC) VerifyCtx(ctx context.Context) (context.Context, error) {
 	m, ok := metadata.FromIncomingContext(ctx)
 
 	if !ok {
 		return ctx, ErrMissingMetadata
 	}
 
-	v, ok := m[MetaKeyAuthorization]
+	inTok, ok := m[MetaKeyAuthorization]
 	if !ok {
 		return ctx, ErrMissingAuthorization
 	}
 
-	if len(v) != 1 {
+	m.Delete(MetaKeyAuthorization)
+	ctx = metadata.NewIncomingContext(ctx, m)
+
+	if len(inTok) != 1 {
 		return ctx, ErrCorruptedAuthorization
 	}
 
 	// Strip bearer
-	strTok := reBearer.ReplaceAllString(v[0], "")
+	strTok := reBearer.ReplaceAllString(inTok[0], "")
 
 	tok, err := o.Verifier.Verify(ctx, strTok)
 
@@ -126,15 +136,15 @@ func (o *OIDC) authn(ctx context.Context) (context.Context, error) {
 		return ctx, fmt.Errorf("%w: %s", ErrFailedToAuthenticate, err)
 	}
 
-	inClaims := &claims{}
+	claims := &tokens.X40{}
 
-	if err := tok.Claims(&inClaims); err != nil {
+	if err := tok.Claims(&claims); err != nil {
 		return ctx, fmt.Errorf("%w: %s", ErrFailedToAuthenticate, err)
 	}
 
 	hasRole := false
 
-	for _, r := range inClaims.Roles {
+	for _, r := range claims.Roles {
 		if _, ok := allowedRoles[r]; ok {
 			hasRole = true
 		}
@@ -144,7 +154,7 @@ func (o *OIDC) authn(ctx context.Context) (context.Context, error) {
 		return ctx, fmt.Errorf("%w: %s", ErrFailedToAuthenticate, "required role missing")
 	}
 
-	ctx = context.WithValue(ctx, storage.CtxKeyAgent, "email:"+inClaims.Email)
+	ctx = context.WithValue(ctx, storage.CtxKeyAgent, "email:"+claims.Email)
 
 	return ctx, nil
 }
