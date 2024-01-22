@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/andrewhowdencom/x40.link/api/auth/tokens"
+	"github.com/andrewhowdencom/x40.link/api/auth/jwts"
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/coreos/go-oidc/v3/oidc"
 	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
@@ -46,6 +46,7 @@ var allowedRoles = map[string]bool{
 
 // Err* are sentinel errors
 var (
+	// Server Side
 	ErrMissingMetadata        = status.Error(codes.InvalidArgument, "missing metadata")
 	ErrMissingAuthorization   = status.Error(codes.InvalidArgument, "missing authorization")
 	ErrCorruptedAuthorization = status.Error(codes.InvalidArgument, "unexpected number of authentication values")
@@ -56,14 +57,13 @@ var (
 	reBearer = regexp.MustCompile("(?i)Bearer ")
 )
 
-// OIDC provides an implementation for the OpenID method of verifying users.
-//
-// Only implements authentication (or "authn" — "who are you")
+// OIDC provides an implementation for the OpenID method of verifying users. Only the server side of OpenID is
+// implemented, with the client side being addressed by the Device claim for OAuth.
 type OIDC struct {
 	Verifier *oidc.IDTokenVerifier
 }
 
-// UnaryServerInterceptor provides the implementation of the OIDC handler
+// UnaryServerInterceptor provides the implementation of the OIDC Verifier
 func (o *OIDC) UnaryServerInterceptor(
 	ctx context.Context,
 	req any,
@@ -79,7 +79,7 @@ func (o *OIDC) UnaryServerInterceptor(
 	return handler(ctx, req)
 }
 
-// StreamServerInterceptor provides the implementation of the OIDC handler
+// StreamServerInterceptor provides the implementation of the OIDC Verifier
 func (o *OIDC) StreamServerInterceptor(
 	srv any,
 	ss grpc.ServerStream,
@@ -136,7 +136,7 @@ func (o *OIDC) VerifyCtx(ctx context.Context) (context.Context, error) {
 		return ctx, fmt.Errorf("%w: %s", ErrFailedToAuthenticate, err)
 	}
 
-	claims := &tokens.X40{}
+	claims := &jwts.X40{}
 
 	if err := tok.Claims(&claims); err != nil {
 		return ctx, fmt.Errorf("%w: %s", ErrFailedToAuthenticate, err)
