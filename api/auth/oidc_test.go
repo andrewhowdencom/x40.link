@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/andrewhowdencom/x40.link/api/auth"
-	"github.com/andrewhowdencom/x40.link/api/auth/tokens"
+	"github.com/andrewhowdencom/x40.link/api/auth/jwts"
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/golang-jwt/jwt/v5"
@@ -85,8 +85,8 @@ func TestOIDCAuthCtx(t *testing.T) {
 		{
 			name: "no role",
 			ctx: func() context.Context {
-				oTok := &tokens.OIDC{
-					Default: &tokens.Default{
+				oTok := &jwts.OIDC{
+					Default: &jwts.Default{
 						Issuer:  issuer,
 						Subject: "e7e90d06-b60b-11ee-993a-5bf4ddaa2f8d",
 
@@ -103,7 +103,7 @@ func TestOIDCAuthCtx(t *testing.T) {
 				}
 
 				tok := jwt.NewWithClaims(jwt.SigningMethodRS256, oTok)
-				sTok, err := tok.SignedString(pkey)
+				sTok, err := tok.SignedString(pkey) //nolint:all false positive
 				if err != nil {
 					panic("failed to create token: " + err.Error())
 				}
@@ -147,8 +147,8 @@ func TestOIDCAuthCtx(t *testing.T) {
 		{
 			name: "all ok, has agent context",
 			ctx: func() context.Context {
-				oTok := &tokens.X40{
-					Default: &tokens.Default{
+				oTok := &jwts.X40{
+					Default: &jwts.Default{
 						Issuer:  issuer,
 						Subject: "e7e90d06-b60b-11ee-993a-5bf4ddaa2f8d",
 
@@ -159,7 +159,7 @@ func TestOIDCAuthCtx(t *testing.T) {
 						Expiration: jwt.NewNumericDate(time.Now().Add(time.Hour * 4)),
 					},
 
-					OIDC: &tokens.OIDC{
+					OIDC: &jwts.OIDC{
 						Name:   "Test User",
 						Email:  "test-user@example.local",
 						Locale: "en_GB",

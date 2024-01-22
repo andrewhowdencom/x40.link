@@ -1,5 +1,5 @@
-// Package tokens provides various different JWT tokens.
-package tokens
+// Package jwts provides various different JWT tokens.
+package jwts
 
 import "github.com/golang-jwt/jwt/v5"
 
@@ -90,6 +90,6 @@ type X40 struct {
 	*OIDC
 
 	// Roles are the roles the application users may have. Long term, this should be deprecated and removed in
-	// favor of ReBAC but for now, it persists.
+	// favor of ReBAC but for now, it
 	Roles []string `json:"x40.link/roles"`
 }
