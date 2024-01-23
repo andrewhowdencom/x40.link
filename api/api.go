@@ -3,13 +3,70 @@
 package api
 
 import (
+	"strings"
+
 	"github.com/andrewhowdencom/x40.link/api/dev"
 	gendev "github.com/andrewhowdencom/x40.link/api/gen/dev"
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/andrewhowdencom/x40.link/uid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	descpb "google.golang.org/protobuf/types/descriptorpb"
 )
+
+// ProtoPackages is a list of all protobuf packages this API cares about.
+var ProtoPackages = []string{
+	"x40.dev.url",
+	"x40.dev.auth",
+}
+
+// ReflectionPermissions are permissions from the reflection API.
+//
+// See
+func ReflectionPermissions() map[string]string {
+	return map[string]string{
+		"/grpc.reflection.v1.ServerReflection/ServerReflectionInfo": "",
+	}
+}
+
+// X40Permissions returns a paired list of method + scope definitions.
+func X40Permissions() map[string]string {
+	ret := map[string]string{}
+
+	for _, p := range ProtoPackages {
+		protoregistry.GlobalFiles.RangeFilesByPackage(protoreflect.FullName(p), func(fd protoreflect.FileDescriptor) bool {
+			for i := 0; i < fd.Services().Len(); i++ {
+				svc := fd.Services().Get(i)
+
+				for j := 0; j < svc.Methods().Len(); j++ {
+					method := svc.Methods().Get(j)
+
+					opts := method.Options().(*descpb.MethodOptions)
+					scope := proto.GetExtension(opts, gendev.E_Oauth2Scope).(string)
+
+					// Here, we need to construct the name as the interceptor returns it. That is,
+					// /<package>/<method>
+					name := strings.Join([]string{
+						"/",
+						string(svc.FullName()),
+						"/",
+						string(method.Name()),
+					}, "")
+
+					ret[name] = scope
+
+				}
+			}
+
+			return true
+		})
+	}
+
+	return ret
+}
 
 // NewGRPCMux generates a valid GRPC server with all GRPC routes configured.
 func NewGRPCMux(storer storage.Storer, opts ...grpc.ServerOption) *grpc.Server {

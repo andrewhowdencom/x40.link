@@ -4,10 +4,13 @@ go 1.21.4
 
 require (
 	cloud.google.com/go/firestore v1.14.0
+	github.com/MicahParks/keyfunc/v3 v3.2.4
+	github.com/adrg/xdg v0.4.0
 	github.com/andrewhowdencom/sysexits v0.0.0-20230825110138-f9dd56ec6fce
 	github.com/bufbuild/buf v1.28.1
 	github.com/coreos/go-oidc/v3 v3.9.0
 	github.com/go-chi/chi/v5 v5.0.11
+	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
@@ -35,6 +38,7 @@ require (
 	connectrpc.com/connect v1.12.0 // indirect
 	connectrpc.com/otelconnect v0.6.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
+	github.com/MicahParks/jwkset v0.5.7 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
 	github.com/bufbuild/protocompile v0.6.1-0.20231108163138-146b831231f7 // indirect
@@ -56,7 +60,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gofrs/uuid/v5 v5.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/cel-go v0.18.2 // indirect
