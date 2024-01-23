@@ -4,6 +4,8 @@ option go_package = "github.com/andrewhowdencom/x40/api/gen/dev";
 
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
+import "google/protobuf/descriptor.proto";
+import "dev/auth.proto";
 
 // URL is a type representing the URL that should be created.
 //
@@ -25,16 +27,21 @@ message Response {
 // NewRequest generates a URL at the desired domain.
 message NewRequest {
     RedirectOn on = 1;
-    string sendTo = 2;
+    string send_to = 2;
 }
-
 
 // TODO: Authentication should be an emergent property of these definitions.
 // Come back to when looking at ReBAC
+//
+// TODO: Rename scope as permission.
 service ManageURLs {
     // Get queries a URL, returning the URL if there was found (or none, if it was not found)
-    rpc Get(GetRequest) returns (Response) {}
+    rpc Get(GetRequest) returns (Response) {
+        option (x40.dev.auth.oauth2_scope) = "api.x40.link/scopes/x40.dev.url.ManageURLs.Get";
+    }
 
     // Post generates a new URL with a generated suffix.
-    rpc New(NewRequest) returns (Response) {}
+    rpc New(NewRequest) returns (Response) {
+        option (x40.dev.auth.oauth2_scope) = "api.x40.link/scopes/x40.dev.url.ManageURLs.New";
+    }
 }

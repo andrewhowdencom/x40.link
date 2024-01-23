@@ -8,7 +8,8 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/andrewhowdencom/sysexits"
-	"github.com/andrewhowdencom/x40.link/api/auth"
+	"github.com/andrewhowdencom/x40.link/api"
+	"github.com/andrewhowdencom/x40.link/api/auth/jwts"
 	"github.com/andrewhowdencom/x40.link/configuration"
 	"github.com/andrewhowdencom/x40.link/server"
 	"github.com/andrewhowdencom/x40.link/storage"
@@ -16,7 +17,7 @@ import (
 	fsdb "github.com/andrewhowdencom/x40.link/storage/firestore"
 	"github.com/andrewhowdencom/x40.link/storage/memory"
 	"github.com/andrewhowdencom/x40.link/storage/yaml"
-	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -67,8 +68,12 @@ func init() {
 	// API configuration
 	serveFlagSet.StringP(configuration.ServerAPIGRPCHost, "g", "", "The host on which to listen for GRPC requests")
 
-	serveFlagSet.String(configuration.OAuth2ClientID, "", "What OAuth Client ID should be used to validate tokens")
-	serveFlagSet.String(configuration.OIDCProviderEndpoint, "", "What OIDC provider endpoint to validate against")
+	serveFlagSet.BoolP(configuration.AuthX40, "a", false, "Whether to authenticate as if deployed as the public application")
+	serveFlagSet.String(configuration.AuthJWKSURL, "", "The JWKS url to fetch the configuration for JWT validation")
+	serveFlagSet.String(configuration.AuthClaimIssuer, "", "An issuer to validate the JWT claims contain")
+	serveFlagSet.String(configuration.AuthClaimAudience, "", "An audience to validate the JWT claims contain")
+	serveFlagSet.Bool(configuration.AuthClaimExpiration, false, "Whether to check the expiration on JWT claims")
+	serveFlagSet.Bool(configuration.AuthClaimIssuedAt, false, "Whether to check the issued at on JWT claims")
 
 	// Protocol configuration
 	serveFlagSet.BoolP(configuration.ServerH2CEnabled, "c", true, "Whether to enable HTTP/2 cleartext (with prior knowledge)")
@@ -81,8 +86,6 @@ func init() {
 	serveCmd.Flags().AddFlagSet(serveFlagSet)
 	serveCmd.MarkFlagsOneRequired(storageFlags...)
 	serveCmd.MarkFlagsMutuallyExclusive(storageFlags...)
-
-	serveCmd.MarkFlagsRequiredTogether(configuration.OAuth2ClientID, configuration.OIDCProviderEndpoint)
 
 }
 
@@ -102,20 +105,52 @@ func RunServe(cmd *cobra.Command, _ []string) error {
 	apiHost := viper.GetString(configuration.ServerAPIGRPCHost)
 	apiOpts := []grpc.ServerOption{}
 
-	// Authentication.
-	if viper.GetString(configuration.OAuth2ClientID) != "" || viper.GetString(configuration.OIDCProviderEndpoint) != "" {
-		// TODO: Figure out the map. Also, ownership.
-		provider, err := oidc.NewProvider(cmd.Context(), viper.GetString(configuration.OIDCProviderEndpoint))
-		if err != nil {
-			return fmt.Errorf("%w: %s", sysexits.Config, err)
-		}
+	authOpts := []jwts.ServerOptionFunc{}
+	parserOpts := []jwt.ParserOption{}
 
-		oidc := &auth.OIDC{Verifier: provider.Verifier(&oidc.Config{ClientID: viper.GetString(configuration.OAuth2ClientID)})}
+	// Authentication.
+	// The default
+	if viper.GetBool(configuration.AuthX40) {
+		authOpts = append(
+			authOpts,
+			jwts.WithJWKSKeyFunc(jwts.PublicJWKSURL),
+			jwts.WithParser(jwt.NewParser(jwts.PublicJWTClaims...)),
+			jwts.WithAddedPermissions(api.X40Permissions()),
+			jwts.WithAddedPermissions(api.ReflectionPermissions()),
+		)
+	}
+
+	// Custom Implementations
+	if v := viper.GetString(configuration.AuthClaimIssuer); v != "" {
+		parserOpts = append(parserOpts, jwt.WithIssuer(v))
+	}
+
+	if v := viper.GetString(configuration.AuthClaimAudience); v != "" {
+		parserOpts = append(parserOpts, jwt.WithAudience(v))
+	}
+
+	if v := viper.GetBool(configuration.AuthClaimExpiration); v {
+		parserOpts = append(parserOpts, jwt.WithExpirationRequired())
+	}
+
+	if v := viper.GetBool(configuration.AuthClaimIssuedAt); v {
+		parserOpts = append(parserOpts, jwt.WithIssuedAt())
+	}
+
+	if len(parserOpts) > 0 {
+		authOpts = append(authOpts, jwts.WithParser(jwt.NewParser(parserOpts...)))
+	}
+
+	if len(authOpts) > 0 {
+		jwt, err := jwts.NewValidator(authOpts...)
+		if err != nil {
+			return fmt.Errorf("%w: %s", sysexits.Software, err)
+		}
 
 		apiOpts = append(
 			apiOpts,
-			grpc.UnaryInterceptor(oidc.UnaryServerInterceptor),
-			grpc.StreamInterceptor(oidc.StreamServerInterceptor),
+			grpc.UnaryInterceptor(jwt.UnaryServerInterceptor),
+			grpc.StreamInterceptor(jwt.StreamServerInterceptor),
 		)
 	}
 
