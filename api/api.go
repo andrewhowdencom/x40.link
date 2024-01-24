@@ -68,6 +68,17 @@ func X40Permissions() map[string]string {
 	return ret
 }
 
+// X40PermissionsList returns a list of all permissions, but no method association.
+func X40PermissionsList() []string {
+	m := []string{}
+
+	for _, v := range X40Permissions() {
+		m = append(m, v)
+	}
+
+	return m
+}
+
 // NewGRPCMux generates a valid GRPC server with all GRPC routes configured.
 func NewGRPCMux(storer storage.Storer, opts ...grpc.ServerOption) *grpc.Server {
 	m := grpc.NewServer(opts...)

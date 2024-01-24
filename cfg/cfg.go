@@ -65,6 +65,8 @@ var (
 
 // The actual configuration values.
 var (
+	APIEndpoint = &String{V: V{Path: "api.endpoint", Default: "https://api.x40.link", Usage: "The endpoint to talk to for links", mu: &sync.Mutex{}}}
+
 	// AuthX40 just means "authenticate this against the public X40 endpoints"
 	AuthX40 = &Bool{V: V{Path: "auth.x40", Default: false, Usage: "Whether to configure the application to authenticate against the public x40 links", mu: &sync.Mutex{}}}
 
@@ -77,6 +79,17 @@ var (
 	AuthClaimIssuedAt   = &Bool{V: V{Path: "auth.jwt.issued-at", Default: false, Usage: "The time at which a JWT was issued, validated in the authentication", mu: &sync.Mutex{}}}
 	AuthClaimExpiration = &Bool{V: V{Path: "auth.jwt.expiration", Default: true, Usage: "Whether to force expiration on tokens", mu: &sync.Mutex{}}}
 
+	// OAuth2 configuration. Configured to point to production systems by default.
+	OAuth2AuthorizationURL = &String{V: V{Path: "oauth2.authorization.url", Default: "https://x40.eu.auth0.com/authorize", Usage: "The URL for the authorization flow", mu: &sync.Mutex{}}}
+
+	// x40.auth0/x40-cli
+	//
+	// Safe to embed. See:
+	// https://www.oauth.com/oauth2-servers/client-registration/client-id-secret/
+	OAuth2ClientID                    = &String{V: V{Path: "oauth2.client.id", Default: "FH72Qo7CrVKE9hr71cHYKbLimKAobMot", Usage: "The ClientID to present during the authorization flow", mu: &sync.Mutex{}}}
+	OAuth2DeviceAuthorizationEndpoint = &String{V: V{Path: "oauth2.device-authorization.url", Default: "https://x40.eu.auth0.com/oauth/device/code", Usage: "The URL for the device flow", mu: &sync.Mutex{}}}
+	OAuth2TokenURL                    = &String{V: V{Path: "oauth2.token.url", Default: "https://x40.eu.auth0.com/oauth/token", Usage: "The URL that can be used to exchange auth for tokens", mu: &sync.Mutex{}}}
+
 	ServerListenAddress = &String{V: V{Path: "server.listen-address", Default: "localhost:80", Usage: "The address on which to listen to incoming requests", mu: &sync.Mutex{}}}
 	ServerAPIGRPCHost   = &String{V: V{Path: "server.api.grpc.host", Default: "", Usage: "The host on which to listen to GRPC requests (* means all)", mu: &sync.Mutex{}}}
 	ServerH2CEnabled    = &Bool{V: V{Path: "server.protocol.h2c.enabled", Default: true, Usage: "Whether to enable the HTTP/2 Cleartext (with prior knowledge)", mu: &sync.Mutex{}}}
@@ -86,6 +99,8 @@ var (
 	StorageHashMap          = &V{Path: "storage.hash-map", Default: false, Usage: "Whether to use an in-memory hash map as URL storage", mu: &sync.Mutex{}}
 	StorageBoltDBFile       = &V{Path: "storage.boltdb.file", Default: "", Usage: "The source file to use with boldDB backed URL storage", mu: &sync.Mutex{}}
 	StorageFirestoreProject = &V{Path: "storage.firestore.project", Default: "", Usage: "The Google Cloud project to use the default firebase storage for", mu: &sync.Mutex{}}
+
+	Timeout = &String{V: V{Path: "timeout", Default: "1m", Usage: "The fallback timeout across the application", mu: &sync.Mutex{}}}
 )
 
 // AddFlagTo accepts a flag set, and adds the flag to it. It also binds that flag to the Viper configuration.
