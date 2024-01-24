@@ -18,18 +18,18 @@ import (
 func TestWithAddedRoles(t *testing.T) {
 	for _, tc := range []struct {
 		name string
-		opt  []jwts.ServerOptionFunc
+		opt  []jwts.ServerInterceptorOptionFunc
 
 		expected map[string]string
 	}{
 		{
 			name:     "empty map",
-			opt:      []jwts.ServerOptionFunc{jwts.WithAddedPermissions(map[string]string{})},
+			opt:      []jwts.ServerInterceptorOptionFunc{jwts.WithAddedPermissions(map[string]string{})},
 			expected: map[string]string{},
 		},
 		{
 			name: "single add",
-			opt: []jwts.ServerOptionFunc{
+			opt: []jwts.ServerInterceptorOptionFunc{
 				jwts.WithAddedPermissions(map[string]string{
 					"foo": "bar",
 				}),
@@ -40,7 +40,7 @@ func TestWithAddedRoles(t *testing.T) {
 		},
 		{
 			name: "with override",
-			opt: []jwts.ServerOptionFunc{
+			opt: []jwts.ServerInterceptorOptionFunc{
 				jwts.WithAddedPermissions(map[string]string{
 					"foo": "bar",
 				}),
@@ -54,7 +54,7 @@ func TestWithAddedRoles(t *testing.T) {
 		},
 		{
 			name: "multiple add",
-			opt: []jwts.ServerOptionFunc{
+			opt: []jwts.ServerInterceptorOptionFunc{
 				jwts.WithAddedPermissions(map[string]string{
 					"foo": "bar",
 				}),
@@ -73,7 +73,7 @@ func TestWithAddedRoles(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			o, err := jwts.NewValidator(tc.opt...)
+			o, err := jwts.NewServerInterceptor(tc.opt...)
 			assert.Nil(t, err)
 
 			assert.Equal(t, tc.expected, o.Permissions)
@@ -117,7 +117,7 @@ func TestJWTValidation(t *testing.T) {
 	// TODO: Test sub
 	for _, tc := range []struct {
 		name string
-		opts []jwts.ServerOptionFunc
+		opts []jwts.ServerInterceptorOptionFunc
 
 		ctx    context.Context
 		method string
@@ -136,7 +136,7 @@ func TestJWTValidation(t *testing.T) {
 		},
 		{
 			name: "missing metadata",
-			opts: []jwts.ServerOptionFunc{
+			opts: []jwts.ServerInterceptorOptionFunc{
 				jwts.WithStaticKey(tk),
 				jwts.WithAddedPermissions(map[string]string{
 					"TEST-METHOD-NAME": "TEST-METHOD-PERMISSION",
@@ -151,7 +151,7 @@ func TestJWTValidation(t *testing.T) {
 		},
 		{
 			name: "missing authorization key",
-			opts: []jwts.ServerOptionFunc{
+			opts: []jwts.ServerInterceptorOptionFunc{
 				jwts.WithStaticKey(tk),
 				jwts.WithAddedPermissions(map[string]string{
 					"TEST-METHOD-NAME": "TEST-METHOD-PERMISSION",
@@ -166,7 +166,7 @@ func TestJWTValidation(t *testing.T) {
 		},
 		{
 			name: "corrupted authorization key",
-			opts: []jwts.ServerOptionFunc{
+			opts: []jwts.ServerInterceptorOptionFunc{
 				jwts.WithStaticKey(tk),
 				jwts.WithAddedPermissions(map[string]string{
 					"TEST-METHOD-NAME": "TEST-METHOD-PERMISSION",
@@ -187,7 +187,7 @@ func TestJWTValidation(t *testing.T) {
 		},
 		{
 			name: "token signed by wrong key",
-			opts: []jwts.ServerOptionFunc{
+			opts: []jwts.ServerInterceptorOptionFunc{
 				jwts.WithStaticKey(func() *rsa.PublicKey {
 					// Generate key material
 					tk, err := rsa.GenerateKey(rand.Reader, 1024)
@@ -221,7 +221,7 @@ func TestJWTValidation(t *testing.T) {
 		},
 		{
 			name: "no role",
-			opts: []jwts.ServerOptionFunc{
+			opts: []jwts.ServerInterceptorOptionFunc{
 				jwts.WithStaticKey(&tk.PublicKey),
 				jwts.WithAddedPermissions(map[string]string{
 					"TEST-METHOD-NAME": "TEST-METHOD-PERMISSION",
@@ -257,7 +257,7 @@ func TestJWTValidation(t *testing.T) {
 		},
 		{
 			name: "wrong audience",
-			opts: []jwts.ServerOptionFunc{
+			opts: []jwts.ServerInterceptorOptionFunc{
 				jwts.WithStaticKey(&tk.PublicKey),
 				jwts.WithParser(tParser),
 				jwts.WithAddedPermissions(map[string]string{
@@ -292,7 +292,7 @@ func TestJWTValidation(t *testing.T) {
 		},
 		{
 			name: "no subject",
-			opts: []jwts.ServerOptionFunc{
+			opts: []jwts.ServerInterceptorOptionFunc{
 				jwts.WithStaticKey(&tk.PublicKey),
 				jwts.WithParser(tParser),
 				jwts.WithAddedPermissions(map[string]string{
@@ -332,7 +332,7 @@ func TestJWTValidation(t *testing.T) {
 		// See https://github.com/grpc/grpc/blob/master/doc/server-reflection.md
 		{
 			name: "no permissions required",
-			opts: []jwts.ServerOptionFunc{
+			opts: []jwts.ServerInterceptorOptionFunc{
 				jwts.WithStaticKey(&tk.PublicKey),
 				jwts.WithParser(tParser),
 				jwts.WithAddedPermissions(map[string]string{
@@ -359,7 +359,7 @@ func TestJWTValidation(t *testing.T) {
 		},
 		{
 			name: "all ok, has agent context",
-			opts: []jwts.ServerOptionFunc{
+			opts: []jwts.ServerInterceptorOptionFunc{
 				jwts.WithStaticKey(&tk.PublicKey),
 				jwts.WithParser(tParser),
 				jwts.WithAddedPermissions(map[string]string{
@@ -389,7 +389,7 @@ func TestJWTValidation(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			jwt, err := jwts.NewValidator(tc.opts...)
+			jwt, err := jwts.NewServerInterceptor(tc.opts...)
 
 			if err != nil {
 				t.Errorf("construction failed: %s", err)

@@ -8,9 +8,9 @@ require (
 	github.com/adrg/xdg v0.4.0
 	github.com/andrewhowdencom/sysexits v0.0.0-20230825110138-f9dd56ec6fce
 	github.com/bufbuild/buf v1.28.1
-	github.com/coreos/go-oidc/v3 v3.9.0
 	github.com/go-chi/chi/v5 v5.0.11
 	github.com/golang-jwt/jwt/v5 v5.2.0
+	github.com/google/wire v0.5.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.1
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
@@ -55,7 +55,6 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/felixge/fgprof v0.9.3 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/go-jose/go-jose/v3 v3.0.1 // indirect
 	github.com/go-logr/logr v1.3.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gofrs/uuid/v5 v5.0.0 // indirect

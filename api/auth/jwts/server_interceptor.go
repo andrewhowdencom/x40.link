@@ -48,8 +48,8 @@ var (
 	}
 )
 
-// ServerOptionFunc modifies the behavior of the oauth2 validator
-type ServerOptionFunc func(o *ServerInterceptor) error
+// ServerInterceptorOptionFunc modifies the behavior of the oauth2 validator
+type ServerInterceptorOptionFunc func(o *ServerInterceptor) error
 
 // ServerInterceptor is an interceptor that validates the JWT tokens supplied by the user.
 // See:
@@ -65,7 +65,7 @@ type ServerInterceptor struct {
 }
 
 // WithKeyFunc supplies the function that supplies the key for validation
-func WithKeyFunc(kf jwt.Keyfunc) ServerOptionFunc {
+func WithKeyFunc(kf jwt.Keyfunc) ServerInterceptorOptionFunc {
 	return func(o *ServerInterceptor) error {
 		o.kf = kf
 
@@ -74,7 +74,7 @@ func WithKeyFunc(kf jwt.Keyfunc) ServerOptionFunc {
 }
 
 // WithJWKSKeyFunc allows fetching the key function from upstream
-func WithJWKSKeyFunc(urls ...string) ServerOptionFunc {
+func WithJWKSKeyFunc(urls ...string) ServerInterceptorOptionFunc {
 	return func(o *ServerInterceptor) error {
 		n, err := keyfunc.NewDefault(urls)
 		if err != nil {
@@ -89,7 +89,7 @@ func WithJWKSKeyFunc(urls ...string) ServerOptionFunc {
 
 // WithStaticKey allows using an arbitrary static key to check for the token validity. WARNING: Should not really be
 // used; primarily designed for ease of testing.
-func WithStaticKey(k interface{}) ServerOptionFunc {
+func WithStaticKey(k interface{}) ServerInterceptorOptionFunc {
 	return func(o *ServerInterceptor) error {
 		o.kf = func(t *jwt.Token) (interface{}, error) {
 			return k, nil
@@ -101,7 +101,7 @@ func WithStaticKey(k interface{}) ServerOptionFunc {
 
 // WithAddedPermissions sets the scopes directly on the oauth2 implementation.
 // TODO: Test this.
-func WithAddedPermissions(perms map[string]string) ServerOptionFunc {
+func WithAddedPermissions(perms map[string]string) ServerInterceptorOptionFunc {
 	return func(o *ServerInterceptor) error {
 		for k, v := range perms {
 			o.Permissions[k] = v
@@ -112,15 +112,15 @@ func WithAddedPermissions(perms map[string]string) ServerOptionFunc {
 }
 
 // WithParser allows configuring the parser.
-func WithParser(p *jwt.Parser) ServerOptionFunc {
+func WithParser(p *jwt.Parser) ServerInterceptorOptionFunc {
 	return func(o *ServerInterceptor) error {
 		o.par = p
 		return nil
 	}
 }
 
-// NewValidator is a convenience function that generates the JWT validation interceptors
-func NewValidator(opts ...ServerOptionFunc) (*ServerInterceptor, error) {
+// NewServerInterceptor is a convenience function that generates the JWT validation interceptors
+func NewServerInterceptor(opts ...ServerInterceptorOptionFunc) (*ServerInterceptor, error) {
 	o := &ServerInterceptor{
 		Permissions: make(map[string]string),
 	}
