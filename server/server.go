@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/andrewhowdencom/x40.link/api"
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -90,7 +89,7 @@ func WithH2C() Option {
 		mux.Use(Intercept(IsH2C, h2c.NewHandler(
 			mux,
 
-			// The
+			// The relevant HTTP/2 server to upgrade and hanadle connections on.
 			&http2.Server{},
 		)))
 
@@ -99,7 +98,7 @@ func WithH2C() Option {
 }
 
 // WithGRPC enables GRPC to be served over the
-func WithGRPC(storer storage.Storer, host string, opts ...grpc.ServerOption) Option {
+func WithGRPC(host string, server *grpc.Server) Option {
 	return func(srv *http.Server) error {
 		mux := srv.Handler.(*chi.Mux)
 		filters := []MatcherFunc{
@@ -111,7 +110,7 @@ func WithGRPC(storer storage.Storer, host string, opts ...grpc.ServerOption) Opt
 			filters = append(filters, IsHost(host))
 		}
 
-		mux.Use(Intercept(AllOf(filters...), api.NewGRPCMux(storer, opts...)))
+		mux.Use(Intercept(AllOf(filters...), server))
 
 		return nil
 	}
