@@ -12,6 +12,8 @@ import (
 
 // Err* are sentinel errors
 var (
+	ErrFailed = errors.New("seed failed")
+
 	ErrFailedToExchange     = errors.New("failed to exchange token")
 	ErrFailedToGetDeviceURL = errors.New("failed to get device url")
 )
