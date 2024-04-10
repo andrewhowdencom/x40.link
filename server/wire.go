@@ -28,6 +28,10 @@ func ResolveOptions() ([]Option, error) {
 
 	opts = append(opts, WithStorage(storage))
 
+	if addr := cfg.ServerListenAddress.Value(); addr != "" {
+		opts = append(opts, WithListenAddress(addr))
+	}
+
 	if cfg.ServerH2CEnabled.Value() {
 		opts = append(opts, WithH2C())
 	}
