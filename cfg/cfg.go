@@ -65,7 +65,7 @@ var (
 
 // The actual configuration values.
 var (
-	APIEndpoint = &String{V: V{Path: "api.endpoint", Default: "https://api.x40.link", Usage: "The endpoint to talk to for links", mu: &sync.Mutex{}}}
+	APIEndpoint = &String{V: V{Path: "api.endpoint", Default: "api.x40.link:443", Usage: "The endpoint to talk to for links", mu: &sync.Mutex{}}}
 
 	// AuthX40 just means "authenticate this against the public X40 endpoints"
 	AuthX40 = &Bool{V: V{Path: "auth.x40", Default: false, Usage: "Whether to configure the application to authenticate against the public x40 links", mu: &sync.Mutex{}}}

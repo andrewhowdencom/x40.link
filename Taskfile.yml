@@ -20,7 +20,8 @@ tasks:
     cmds:
       # Generate the required files
       - mkdir -p "dist/{{ .GOOS }}+{{ .GOARCH }}"
-      - go build -o "dist/{{ .GOOS }}+{{ .GOARCH }}/x40.link{{ exeExt }}"
+      - go build -o "dist/{{ .GOOS }}+{{ .GOARCH }}/x40.link{{ exeExt }}" main.go
+      - go build -o "dist/{{ .GOOS }}+{{ .GOARCH }}/@{{ exeExt }}" cli/main.go 
 
   bin/all:
     desc: "Builds the go binaries"

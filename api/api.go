@@ -3,6 +3,9 @@
 package api
 
 import (
+	"crypto/x509"
+	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/andrewhowdencom/x40.link/api/dev"
@@ -10,12 +13,20 @@ import (
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/andrewhowdencom/x40.link/uid"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	descpb "google.golang.org/protobuf/types/descriptorpb"
 )
+
+var ErrCannotDialServer = errors.New("cannot connect to grpc server")
+var ErrMissingCertificates = errors.New("cannot get system certificates")
+
+type Client interface {
+	gendev.ManageURLsClient
+}
 
 // ProtoPackages is a list of all protobuf packages this API cares about.
 var ProtoPackages = []string{
@@ -94,4 +105,21 @@ func NewGRPCMux(storer storage.Storer, opts ...grpc.ServerOption) *grpc.Server {
 	reflection.Register(m)
 
 	return m
+}
+
+func NewGRPCClient(addr string, opts ...grpc.DialOption) (Client, error) {
+
+	// Use the default system certiifcate pool.
+	cp, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", ErrMissingCertificates, err)
+	}
+
+	opts = append(opts, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(cp, "")))
+	conn, err := grpc.Dial(addr, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", ErrCannotDialServer, err)
+	}
+
+	return gendev.NewManageURLsClient(conn), nil
 }
