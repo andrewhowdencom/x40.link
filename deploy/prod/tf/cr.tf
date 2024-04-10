@@ -68,13 +68,14 @@ resource "google_compute_global_address" "x40-link" {
   name = "x40-link"
 }
 
-resource "google_compute_managed_ssl_certificate" "all-link-shorteners" {
-  name = "all-link-shorteners"
+resource "google_compute_managed_ssl_certificate" "all-link-shorteners-v2" {
+  name = "all-link-shorteners-v2"
 
   managed {
-    domains = concat(var.x40_link_domains, var.h4n_me_domains, andrewhowden.com)
+    domains = concat(var.x40_link_domains, var.h4n_me_domains, ["andrewhowden.com"])
   }
 }
+
 
 resource "google_compute_region_network_endpoint_group" "x40-link" {
   name                  = "x40-link"
@@ -106,7 +107,7 @@ resource "google_compute_target_https_proxy" "x40-link" {
   url_map = google_compute_url_map.x40-link.id
 
   ssl_certificates = [
-    google_compute_managed_ssl_certificate.all-link-shorteners.id
+    google_compute_managed_ssl_certificate.all-link-shorteners-v2.id
   ]
 }
 
