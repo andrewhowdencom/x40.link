@@ -72,7 +72,7 @@ resource "google_compute_managed_ssl_certificate" "all-link-shorteners" {
   name = "all-link-shorteners"
 
   managed {
-    domains = concat(var.x40_link_domains, var.h4n_me_domains)
+    domains = concat(var.x40_link_domains, var.h4n_me_domains, andrewhowden.com)
   }
 }
 
