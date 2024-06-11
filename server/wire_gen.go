@@ -9,9 +9,9 @@ package server
 import (
 	"errors"
 	"fmt"
-	di2 "github.com/andrewhowdencom/x40.link/api/di"
+	"github.com/andrewhowdencom/x40.link/api/di"
 	"github.com/andrewhowdencom/x40.link/cfg"
-	"github.com/andrewhowdencom/x40.link/storage/di"
+	di2 "github.com/andrewhowdencom/x40.link/storage/di"
 	"net/http"
 )
 
@@ -39,20 +39,24 @@ var ErrDependencyFailure = errors.New("dependency failure")
 func ResolveOptions() ([]Option, error) {
 	opts := []Option{}
 
-	storage, err := di.WireStorage()
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", ErrDependencyFailure, err)
+	if addr := cfg.ServerListenAddress.Value(); addr != "" {
+		opts = append(opts, WithListenAddress(addr))
 	}
 
 	if cfg.ServerH2CEnabled.Value() {
 		opts = append(opts, WithH2C())
 	}
 
-	server, err := di2.WireGRPCServer()
+	server, err := di.WireGRPCServer()
 	if err != nil && !errors.Is(err, cfg.ErrMissingOptions) {
 		return nil, ErrDependencyFailure
 	} else if err == nil {
 		opts = append(opts, WithGRPC(cfg.ServerAPIGRPCHost.Value(), server))
+	}
+
+	storage, err := di2.WireStorage()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", ErrDependencyFailure, err)
 	}
 
 	opts = append(opts, WithStorage(storage))

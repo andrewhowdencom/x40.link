@@ -21,13 +21,6 @@ var ErrDependencyFailure = errors.New("dependency failure")
 func ResolveOptions() ([]Option, error) {
 	opts := []Option{}
 
-	storage, err := strdi.WireStorage()
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", ErrDependencyFailure, err)
-	}
-
-	opts = append(opts, WithStorage(storage))
-
 	if addr := cfg.ServerListenAddress.Value(); addr != "" {
 		opts = append(opts, WithListenAddress(addr))
 	}
@@ -42,6 +35,13 @@ func ResolveOptions() ([]Option, error) {
 	} else if err == nil {
 		opts = append(opts, WithGRPC(cfg.ServerAPIGRPCHost.Value(), server))
 	}
+
+	storage, err := strdi.WireStorage()
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", ErrDependencyFailure, err)
+	}
+
+	opts = append(opts, WithStorage(storage))
 
 	return opts, nil
 }
