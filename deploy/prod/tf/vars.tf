@@ -8,6 +8,11 @@ variable "h4n_me_domains" {
   default = ["h4n.me", "www.h4n.me"]
 }
 
+variable "dhse_link_domains" {
+  type = list(string)
+  default = ["dhse.link"]
+}
+
 variable "cloud-run__x40-link" {
   type    = string
   default = "x40-link"
