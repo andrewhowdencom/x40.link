@@ -91,7 +91,7 @@ func WithJWKSKeyFunc(urls ...string) ServerInterceptorOptionFunc {
 // used; primarily designed for ease of testing.
 func WithStaticKey(k interface{}) ServerInterceptorOptionFunc {
 	return func(o *ServerInterceptor) error {
-		o.kf = func(t *jwt.Token) (interface{}, error) {
+		o.kf = func(_ *jwt.Token) (interface{}, error) {
 			return k, nil
 		}
 

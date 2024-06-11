@@ -40,7 +40,7 @@ func TestSeedDeviceAuth(t *testing.T) {
 					h: func() http.Handler {
 						mux := chi.NewMux()
 
-						mux.Post("/oauth/device/code", func(w http.ResponseWriter, r *http.Request) {
+						mux.Post("/oauth/device/code", func(w http.ResponseWriter, _ *http.Request) {
 							w.WriteHeader(http.StatusInternalServerError)
 						})
 
@@ -58,7 +58,7 @@ func TestSeedDeviceAuth(t *testing.T) {
 					h: func() http.Handler {
 						mux := chi.NewMux()
 
-						mux.Post("/oauth/device/code", func(w http.ResponseWriter, r *http.Request) {
+						mux.Post("/oauth/device/code", func(w http.ResponseWriter, _ *http.Request) {
 							auth := &oauth2.DeviceAuthResponse{
 								DeviceCode:              "TEST-DEVICE-CODE",
 								UserCode:                "TEST-USER-CODE",
@@ -74,7 +74,7 @@ func TestSeedDeviceAuth(t *testing.T) {
 							}
 						})
 
-						mux.Post("/oauth/token", func(w http.ResponseWriter, r *http.Request) {
+						mux.Post("/oauth/token", func(w http.ResponseWriter, _ *http.Request) {
 							w.WriteHeader(http.StatusInternalServerError)
 						})
 
@@ -92,7 +92,7 @@ func TestSeedDeviceAuth(t *testing.T) {
 					h: func() http.Handler {
 						mux := chi.NewMux()
 
-						mux.Post("/oauth/device/code", func(w http.ResponseWriter, r *http.Request) {
+						mux.Post("/oauth/device/code", func(w http.ResponseWriter, _ *http.Request) {
 							auth := &oauth2.DeviceAuthResponse{
 								DeviceCode:              "TEST-DEVICE-CODE",
 								UserCode:                "TEST-USER-CODE",
@@ -108,7 +108,7 @@ func TestSeedDeviceAuth(t *testing.T) {
 							}
 						})
 
-						mux.Post("/oauth/token", func(w http.ResponseWriter, r *http.Request) {
+						mux.Post("/oauth/token", func(w http.ResponseWriter, _ *http.Request) {
 							w.Header().Set("Content-Type", "application/json")
 
 							tok := &oauth2.Token{

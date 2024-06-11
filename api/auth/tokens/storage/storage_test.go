@@ -51,7 +51,7 @@ func TestStorageRW(t *testing.T) {
 				Path: "foo.json",
 			},
 
-			setup: func(name string) {},
+			setup: func(_ string) {},
 			fl: []interface{}{
 				func(f *storage.File) ([]byte, error) {
 					return f.Read()
@@ -92,7 +92,7 @@ func TestStorageRW(t *testing.T) {
 			file: &storage.File{
 				Path: "foo.json",
 			},
-			setup: func(inDir string) {},
+			setup: func(_ string) {},
 			fl: []interface{}{
 				func(f *storage.File) error {
 					return f.Write([]byte("Im going in the file!"))
@@ -108,7 +108,7 @@ func TestStorageRW(t *testing.T) {
 			file: &storage.File{
 				Path: "foo.json",
 			},
-			setup: func(inDir string) {},
+			setup: func(_ string) {},
 			fl: []interface{}{
 				func(f *storage.File) error {
 					return f.Write([]byte("Im going in the file!"))

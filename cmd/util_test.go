@@ -22,7 +22,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "Everything OK",
 			cmd: &cobra.Command{
-				RunE: func(cmd *cobra.Command, args []string) error {
+				RunE: func(_ *cobra.Command, _ []string) error {
 					return nil
 				},
 			},
@@ -31,7 +31,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "Passed a sysexit back",
 			cmd: &cobra.Command{
-				RunE: func(cmd *cobra.Command, args []string) error {
+				RunE: func(_ *cobra.Command, _ []string) error {
 					return fmt.Errorf("its broke: %w", sysexits.Unavailable)
 				},
 			},
@@ -40,7 +40,7 @@ func TestExecute(t *testing.T) {
 		{
 			name: "Passed no sysexit, but had an error",
 			cmd: &cobra.Command{
-				RunE: func(cmd *cobra.Command, args []string) error {
+				RunE: func(_ *cobra.Command, _ []string) error {
 					return errors.New("I am very mysterious")
 				},
 			},

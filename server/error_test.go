@@ -28,7 +28,7 @@ func TestErrorMiddleware(t *testing.T) {
 	}{
 		{
 			name: "has no errors",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(w http.ResponseWriter, _ *http.Request) {
 				w.WriteHeader(http.StatusOK)
 				_, _ = w.Write([]byte("Yeah!"))
 			},
@@ -38,7 +38,7 @@ func TestErrorMiddleware(t *testing.T) {
 		},
 		{
 			name: "has a problem error",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(_ http.ResponseWriter, r *http.Request) {
 				server.WithError(r, problem.New(
 					problem.Status(http.StatusConflict),
 				))
@@ -49,7 +49,7 @@ func TestErrorMiddleware(t *testing.T) {
 		},
 		{
 			name: "has an unknown error",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(_ http.ResponseWriter, r *http.Request) {
 				server.WithError(r, errors.New("Not sure what happened here"))
 			},
 
@@ -58,7 +58,7 @@ func TestErrorMiddleware(t *testing.T) {
 		},
 		{
 			name: "has non error type",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(_ http.ResponseWriter, r *http.Request) {
 				*r = *r.WithContext(
 					context.WithValue(r.Context(), server.CtxErrors, "Quack quack"),
 				)
@@ -67,7 +67,7 @@ func TestErrorMiddleware(t *testing.T) {
 		},
 		{
 			name: "has json content type",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(_ http.ResponseWriter, r *http.Request) {
 				server.WithError(r, problem.New(
 					problem.Status(http.StatusConflict),
 				))
@@ -78,7 +78,7 @@ func TestErrorMiddleware(t *testing.T) {
 		},
 		{
 			name: "has application/xml content type",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(_ http.ResponseWriter, r *http.Request) {
 				server.WithError(r, problem.New(
 					problem.Status(http.StatusConflict),
 				))
@@ -89,7 +89,7 @@ func TestErrorMiddleware(t *testing.T) {
 		},
 		{
 			name: "has text/xml content type",
-			handler: func(w http.ResponseWriter, r *http.Request) {
+			handler: func(_ http.ResponseWriter, r *http.Request) {
 				server.WithError(r, problem.New(
 					problem.Status(http.StatusConflict),
 				))

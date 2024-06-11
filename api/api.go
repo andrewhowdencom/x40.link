@@ -21,9 +21,13 @@ import (
 	descpb "google.golang.org/protobuf/types/descriptorpb"
 )
 
-var ErrCannotDialServer = errors.New("cannot connect to grpc server")
-var ErrMissingCertificates = errors.New("cannot get system certificates")
+// Err* are common error codes
+var (
+	ErrCannotDialServer    = errors.New("cannot connect to grpc server")
+	ErrMissingCertificates = errors.New("cannot get system certificates")
+)
 
+// Client is the common interface for the gRPC client
 type Client interface {
 	gendev.ManageURLsClient
 }
@@ -107,6 +111,7 @@ func NewGRPCMux(storer storage.Storer, opts ...grpc.ServerOption) *grpc.Server {
 	return m
 }
 
+// NewGRPCClient generates a client able to talk gRPC to the API
 func NewGRPCClient(addr string, opts ...grpc.DialOption) (Client, error) {
 
 	// Use the default system certiifcate pool.

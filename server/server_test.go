@@ -17,7 +17,7 @@ import (
 func TestNewServer_WithBadOption(t *testing.T) {
 	t.Parallel()
 
-	_, err := server.New(func(s *http.Server) error {
+	_, err := server.New(func(_ *http.Server) error {
 		return errors.New("i am bad")
 	})
 
@@ -63,7 +63,7 @@ func TestNewServer_WithMiddleware(t *testing.T) {
 
 	// Create a path so the request actually gets routed somewhere
 	c := srv.Handler.(*chi.Mux)
-	c.Get("/", func(w http.ResponseWriter, r *http.Request) {
+	c.Get("/", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("Yeah!"))
 	})
 
