@@ -1,3 +1,4 @@
+// Package auth provides facilities to generate the auth required for connecting to the API
 package auth
 
 import (

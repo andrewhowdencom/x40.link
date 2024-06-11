@@ -61,11 +61,11 @@ func TestNewCachingSource(t *testing.T) {
 			name: "storage fails",
 			ctx:  context.Background(),
 			cfg:  &oauth2.Config{},
-			sf: func(ctx context.Context) (*oauth2.Token, error) {
+			sf: func(_ context.Context) (*oauth2.Token, error) {
 				return nil, fmt.Errorf("doesnt matter")
 			},
 
-			str: storage.NewTest(storage.WithReadError(func(t *storage.Test) error {
+			str: storage.NewTest(storage.WithReadError(func(_ *storage.Test) error {
 				return storage.ErrStorageFailure
 			})),
 
@@ -75,7 +75,7 @@ func TestNewCachingSource(t *testing.T) {
 			name: "no token, seed fails",
 			ctx:  context.Background(),
 			cfg:  &oauth2.Config{},
-			sf: func(ctx context.Context) (*oauth2.Token, error) {
+			sf: func(_ context.Context) (*oauth2.Token, error) {
 				return nil, seeds.ErrFailed
 			},
 
@@ -87,7 +87,7 @@ func TestNewCachingSource(t *testing.T) {
 			name: "no token, seed fails to write to storage",
 			ctx:  context.Background(),
 			cfg:  &oauth2.Config{},
-			sf: func(ctx context.Context) (*oauth2.Token, error) {
+			sf: func(_ context.Context) (*oauth2.Token, error) {
 				return &oauth2.Token{
 					AccessToken:  sAccessToken,
 					RefreshToken: sRefreshToken,
@@ -95,7 +95,7 @@ func TestNewCachingSource(t *testing.T) {
 					Expiry:       time.Now().Add(time.Hour),
 				}, nil
 			},
-			str: storage.NewTest(storage.WithWriteError(func(t *storage.Test, b []byte) error {
+			str: storage.NewTest(storage.WithWriteError(func(_ *storage.Test, _ []byte) error {
 				return storage.ErrStorageFailure
 			})),
 
@@ -105,7 +105,7 @@ func TestNewCachingSource(t *testing.T) {
 			name: "junk returned from storage",
 			ctx:  context.Background(),
 			cfg:  &oauth2.Config{},
-			sf: func(ctx context.Context) (*oauth2.Token, error) {
+			sf: func(_ context.Context) (*oauth2.Token, error) {
 				return nil, fmt.Errorf("doesnt matter")
 			},
 			str: storage.NewTest(storage.WithBytes([]byte("Whoops Im not JSON!"))),
@@ -116,7 +116,7 @@ func TestNewCachingSource(t *testing.T) {
 			name: "expired token from storage",
 			ctx:  context.Background(),
 			cfg:  &oauth2.Config{},
-			sf: func(ctx context.Context) (*oauth2.Token, error) {
+			sf: func(_ context.Context) (*oauth2.Token, error) {
 				return &oauth2.Token{
 					AccessToken:  "I-AM-THE-ACCESS-TOKEN",
 					RefreshToken: "I-AM-THE-REFRESH-TOKEN",
@@ -179,12 +179,12 @@ func TestTokenSource(t *testing.T) {
 			name: "underlying token source failure",
 			str:  storage.NewTest(),
 
-			tsf: func(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
+			tsf: func(_ context.Context, _ *oauth2.Token) oauth2.TokenSource {
 				return &TokenSource{
 					err: ErrSentinel,
 				}
 			},
-			seed: func(ctx context.Context) (*oauth2.Token, error) {
+			seed: func(_ context.Context) (*oauth2.Token, error) {
 				return &oauth2.Token{
 					AccessToken:  sAccessToken,
 					RefreshToken: sRefreshToken,
@@ -198,7 +198,7 @@ func TestTokenSource(t *testing.T) {
 		{
 			name: "provided token is exactly the same",
 			str:  storage.NewTest(),
-			seed: func(ctx context.Context) (*oauth2.Token, error) {
+			seed: func(_ context.Context) (*oauth2.Token, error) {
 				return &oauth2.Token{
 					AccessToken:  sAccessToken,
 					RefreshToken: sRefreshToken,
@@ -206,7 +206,7 @@ func TestTokenSource(t *testing.T) {
 					Expiry:       sExpiry,
 				}, nil
 			},
-			tsf: func(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
+			tsf: func(_ context.Context, _ *oauth2.Token) oauth2.TokenSource {
 				return &TokenSource{
 					tokens: []*oauth2.Token{
 						{
@@ -228,7 +228,7 @@ func TestTokenSource(t *testing.T) {
 		},
 		{
 			name: "token different, but storage failed",
-			str: storage.NewTest(storage.WithWriteError(func(t *storage.Test, b []byte) error {
+			str: storage.NewTest(storage.WithWriteError(func(_ *storage.Test, b []byte) error {
 				// The initial write is empty, and contains only the JSON and metadata. Given this, we skip the error
 				// if this is teh write.
 				if len(b) < 60 {
@@ -237,10 +237,10 @@ func TestTokenSource(t *testing.T) {
 
 				return ErrSentinel
 			})),
-			seed: func(ctx context.Context) (*oauth2.Token, error) {
+			seed: func(_ context.Context) (*oauth2.Token, error) {
 				return &oauth2.Token{}, nil
 			},
-			tsf: func(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
+			tsf: func(_ context.Context, _ *oauth2.Token) oauth2.TokenSource {
 				return &TokenSource{
 					tokens: []*oauth2.Token{
 						{
@@ -258,10 +258,10 @@ func TestTokenSource(t *testing.T) {
 		{
 			name: "token different, all good",
 			str:  storage.NewTest(),
-			seed: func(ctx context.Context) (*oauth2.Token, error) {
+			seed: func(_ context.Context) (*oauth2.Token, error) {
 				return &oauth2.Token{}, nil
 			},
-			tsf: func(ctx context.Context, t *oauth2.Token) oauth2.TokenSource {
+			tsf: func(_ context.Context, _ *oauth2.Token) oauth2.TokenSource {
 				return &TokenSource{
 					tokens: []*oauth2.Token{
 						{

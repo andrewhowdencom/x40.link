@@ -1,3 +1,4 @@
+// package main is the main package of the CLI client
 package main
 
 import (
@@ -48,7 +49,8 @@ var Root = &cobra.Command{
 	RunE:  DoURL,
 }
 
-func DoURL(cmd *cobra.Command, args []string) error {
+// DoURL is the root command for the client, and generates URLs
+func DoURL(_ *cobra.Command, args []string) error {
 	ts, err := auth.TokenSource()
 	if err != nil {
 		return fmt.Errorf("%w: %s", sysexits.Software, err)

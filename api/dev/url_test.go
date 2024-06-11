@@ -234,7 +234,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "bad destination url",
 			str:  test.New(),
-			en:   func(from, to *url.URL) error { return nil },
+			en:   func(_, _ *url.URL) error { return nil },
 			req: &gendev.NewRequest{
 				SendTo: "\x00",
 			},
@@ -244,7 +244,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "unauthorized",
 			str:  test.New(test.WithError(storage.ErrUnauthorized)),
-			en:   func(from, to *url.URL) error { return nil },
+			en:   func(_, _ *url.URL) error { return nil },
 			req: &gendev.NewRequest{
 				On: &gendev.RedirectOn{
 					Host: "example.local",
@@ -258,7 +258,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "failure to write",
 			str:  test.New(test.WithError(errors.New("b0rked"))),
-			en:   func(from, to *url.URL) error { return nil },
+			en:   func(_, _ *url.URL) error { return nil },
 			req: &gendev.NewRequest{
 				On: &gendev.RedirectOn{
 					Host: "example.local",
@@ -271,7 +271,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "no polyfilling required",
 			str:  test.New(),
-			en:   func(from, to *url.URL) error { return nil },
+			en:   func(_, _ *url.URL) error { return nil },
 			req: &gendev.NewRequest{
 				On: &gendev.RedirectOn{
 					Host: "example.local",
@@ -287,7 +287,7 @@ func TestNew(t *testing.T) {
 		{
 			name: "enricher fails",
 			str:  test.New(),
-			en: func(from, to *url.URL) error {
+			en: func(_, _ *url.URL) error {
 				return fmt.Errorf("enricher fails")
 			},
 			req: &gendev.NewRequest{

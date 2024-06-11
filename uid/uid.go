@@ -85,7 +85,7 @@ func Failing(_ *url.URL) ([]byte, error) {
 
 // Static is a generator that returns a static set of bytes. Used for testing.
 func Static(s []byte) func(*url.URL) ([]byte, error) {
-	return func(u *url.URL) ([]byte, error) {
+	return func(_ *url.URL) ([]byte, error) {
 		return s, nil
 	}
 }
