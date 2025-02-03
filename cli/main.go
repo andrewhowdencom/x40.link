@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -45,12 +46,49 @@ var (
 var Root = &cobra.Command{
 	Use:   "@",
 	Short: "The client tool for generating URLs",
-	Args:  cobra.ExactArgs(1),
-	RunE:  DoURL,
+	Long: `The client tool for generating URLs.
+
+Generate a random URL on x40.link:
+
+    @ https://my.destination.url/path
+
+Generate a URL on a specific domain, registered on x40.link:
+
+    @ https://source.domain/path https://my.destination.url/path
+
+	`,
+	Args: cobra.MinimumNArgs(1),
+	RunE: DoURL,
 }
 
 // DoURL is the root command for the client, and generates URLs
 func DoURL(_ *cobra.Command, args []string) error {
+
+	req := &dev.NewRequest{}
+
+	// Stub the scheme there. Only HTTPS is supported.
+	for idx := range args {
+		if !strings.Contains(args[idx], "://") {
+			args[idx] = "https://" + args[idx]
+		}
+	}
+
+	switch len(args) {
+	case 1:
+		req.SendTo = args[0]
+	case 2:
+		req.SendTo = args[1]
+		u, err := url.Parse(args[0])
+		if err != nil {
+			return err
+		}
+
+		req.On = &dev.RedirectOn{
+			Host: u.Host,
+			Path: u.Path,
+		}
+	}
+
 	ts, err := auth.TokenSource()
 	if err != nil {
 		return fmt.Errorf("%w: %s", sysexits.Software, err)
@@ -75,9 +113,7 @@ func DoURL(_ *cobra.Command, args []string) error {
 
 	ctx = metadata.NewOutgoingContext(ctx, md)
 
-	resp, err := client.New(ctx, &dev.NewRequest{
-		SendTo: args[0],
-	})
+	resp, err := client.New(ctx, req)
 
 	if err != nil {
 		return fmt.Errorf("%w: %s", sysexits.Protocol, err)
