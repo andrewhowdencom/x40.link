@@ -57,7 +57,7 @@ func (t *Test) Read() ([]byte, error) {
 		}
 	}
 
-	if t.bytes == nil || len(t.bytes) == 0 {
+	if len(t.bytes) == 0 {
 		return nil, ErrNotFound
 	}
 
