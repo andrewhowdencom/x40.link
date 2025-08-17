@@ -15,7 +15,7 @@ jobs:
 
     # The machine type on which the workload is running
     # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#choosing-github-hosted-runners
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout the main branch
         uses: actions/checkout@v4
@@ -76,7 +76,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
 
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: "Deploy to GitHub pages"
         uses: actions/deploy-pages@v4
