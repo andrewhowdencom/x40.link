@@ -3,7 +3,7 @@ package auth
 
 import (
 	"context"
-	"path"
+	"path/filepath"
 
 	"github.com/adrg/xdg"
 	"github.com/andrewhowdencom/x40.link/api"
@@ -29,7 +29,7 @@ func TokenSource() (oauth2.TokenSource, error) {
 		Scopes: api.X40PermissionsList(),
 	}
 
-	tokPath, err := xdg.DataFile(path.Join("x40", "cli-token"))
+	tokPath, err := xdg.DataFile(filepath.Join("x40", "cli-token"))
 	if err != nil {
 		return nil, err
 	}
