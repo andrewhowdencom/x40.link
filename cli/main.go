@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -94,24 +94,16 @@ func DoURL(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("%w: %s", sysexits.Software, err)
 	}
 
-	client, err := api.NewGRPCClient(viper.GetString(cfg.APIEndpoint.Path))
+	client, err := api.NewGRPCClient(
+		viper.GetString(cfg.APIEndpoint.Path),
+		grpc.WithPerRPCCredentials(auth.NewPerRPCCredentials(ts)),
+	)
 	if err != nil {
 		return fmt.Errorf("%w: %s", sysexits.NoHost, err)
 	}
 
-	tok, err := ts.Token()
-	if err != nil {
-		return fmt.Errorf("%w: %s", sysexits.Software, err)
-	}
-
-	md := metadata.New(map[string]string{
-		"Authorization": "Bearer " + tok.AccessToken,
-	})
-
 	ctx, cxl := context.WithTimeout(context.Background(), time.Second*10)
 	defer cxl()
-
-	ctx = metadata.NewOutgoingContext(ctx, md)
 
 	resp, err := client.New(ctx, req)
 
