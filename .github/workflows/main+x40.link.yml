@@ -74,6 +74,7 @@ jobs:
           project_id: andrewhowdencom
           workload_identity_provider: projects/422614898574/locations/global/workloadIdentityPools/github--production/providers/github
           service_account: github-actions-at-x40-link@andrewhowdencom.iam.gserviceaccount.com
+          token_format: access_token
           # This output is used in the next step.
           access_token_lifetime: '300s'
 
