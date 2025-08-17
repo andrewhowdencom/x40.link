@@ -1,5 +1,15 @@
 # Agents
 
+## Tests
+
+For just about all non-trivial changes, make sure you develop via "test driven design". This means:
+
+1. Write tests for the _current_ behavior of the application
+2. Modify those tests so that they verify the _new desired_ behavior of the application 
+3. Modify the logic of the application based on your request, so it validates against those tests.
+4. Adjust either the application or the tests until the tests pass
+5. Publish the change.
+
 ## Git Commits
 
 For git commit messsages, be sure to write them in a format that follows the Linux kernel commit conventions. For example, break at 72 characters, 50 line title and so on. Be sure to include the context of the change, including:
