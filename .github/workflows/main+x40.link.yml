@@ -67,14 +67,23 @@ jobs:
           password: ${{ github.token }}
           registry: ghcr.io/${{ github.repository_owner }}
 
-      - uses: 'google-github-actions/auth@v2'
+      # Authenticate to Google Cloud, giving the step an ID and requesting an access token.
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v2'
         with:
           project_id: andrewhowdencom
           workload_identity_provider: projects/422614898574/locations/global/workloadIdentityPools/github--production/providers/github
           service_account: github-actions-at-x40-link@andrewhowdencom.iam.gserviceaccount.com
+          # This output is used in the next step.
+          access_token_lifetime: '300s'
 
-      - name: "Ask Google Cloud to authenticate podman (or Docker)"
-        run: gcloud auth configure-docker europe-west3-docker.pkg.dev
+      # Use the generated access token to log in directly to Google Artifact Registry.
+      - name: "Login to Google Artifact Registry"
+        run: |
+          podman login \
+            --username oauth2accesstoken \
+            --password ${{ steps.auth.outputs.access_token }} \
+            europe-west3-docker.pkg.dev
 
       - name: Set up Go
         uses: actions/setup-go@v4
