@@ -16,7 +16,7 @@ jobs:
     name: "test"
     # The machine type on which the workload is running
     # https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#choosing-github-hosted-runners
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
 
     # Check out the head of the main branch
