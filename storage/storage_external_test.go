@@ -92,7 +92,7 @@ var externalSinkFactories = map[string]func(string) storage.Storer{
 
 		pids.m[s] = cmd
 
-		conn, err := grpc.Dial("localhost:8500", grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient("localhost:8500", grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			panic(err)
 		}

@@ -121,7 +121,7 @@ func NewGRPCClient(addr string, opts ...grpc.DialOption) (Client, error) {
 	}
 
 	opts = append(opts, grpc.WithTransportCredentials(credentials.NewClientTLSFromCert(cp, "")))
-	conn, err := grpc.Dial(addr, opts...)
+	conn, err := grpc.NewClient(addr, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrCannotDialServer, err)
 	}
