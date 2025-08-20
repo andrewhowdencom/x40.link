@@ -30,6 +30,8 @@ require (
 	schneider.vip/problem v1.9.1
 )
 
+replace github.com/andrewhowdencom/x40.link/api => ./api
+
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250717165733-d22d418d82d8.1 // indirect
 	cel.dev/expr v0.23.1 // indirect

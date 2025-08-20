@@ -10,13 +10,15 @@ import (
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 )
 
 // Option is a function type that modifies the behavior of the server
-type Option func(*http.Server) error
+type Option func(*server) error
 
 // Err* are sentinel errors
 var (
@@ -24,19 +26,23 @@ var (
 	ErrFailedToStart       = errors.New("failed to start server")
 )
 
-var defaultOptions = []Option{
-	WithListenAddress("localhost:80"),
-	WithMiddleware(middleware.Recoverer),
-	WithMiddleware(Error),
+type server struct {
+	*http.Server
+	Trace *trace.TracerProvider
 }
 
 // New creates a server instance, configured appropriately
-func New(opts ...Option) (*http.Server, error) {
-	srv := &http.Server{
-		Handler: chi.NewRouter(),
+func New(opts ...Option) (*server, error) {
+	srv := &server{
+		Server: &http.Server{},
 	}
 
-	opts = append(defaultOptions, opts...)
+	// Default options
+	opts = append([]Option{
+		WithListenAddress("localhost:80"),
+		WithMiddleware(middleware.Recoverer),
+		WithMiddleware(Error),
+	}, opts...)
 
 	for _, opt := range opts {
 		if err := opt(srv); err != nil {
@@ -44,13 +50,29 @@ func New(opts ...Option) (*http.Server, error) {
 		}
 	}
 
+	// Now that we've configured the handler, lets wrap it in the final tracer
+	if srv.Trace != nil {
+		srv.Server.Handler = otelhttp.NewHandler(srv.Handler, "http", otelhttp.WithTracerProvider(srv.Trace))
+	}
+
 	return srv, nil
+}
+
+func (s *server) ListenAndServe() error {
+	return s.Server.ListenAndServe()
 }
 
 // WithMiddleware appends middleware to the default handler
 func WithMiddleware(m func(next http.Handler) http.Handler) Option {
-	return func(srv *http.Server) error {
-		mux := srv.Handler.(*chi.Mux)
+	return func(srv *server) error {
+		if srv.Handler == nil {
+			srv.Handler = chi.NewRouter()
+		}
+
+		mux, ok := srv.Handler.(*chi.Mux)
+		if !ok {
+			return errors.New("cannot apply middleware to non-chi handler")
+		}
 		mux.Use(m)
 
 		return nil
@@ -59,7 +81,7 @@ func WithMiddleware(m func(next http.Handler) http.Handler) Option {
 
 // WithListenAddress indicates the server should start on the specific address
 func WithListenAddress(addr string) Option {
-	return func(s *http.Server) error {
+	return func(s *server) error {
 		s.Addr = addr
 
 		return nil
@@ -68,8 +90,15 @@ func WithListenAddress(addr string) Option {
 
 // WithStorage allows starting the service with a specific storage engine.
 func WithStorage(str storage.Storer) Option {
-	return func(srv *http.Server) error {
-		mux := srv.Handler.(*chi.Mux)
+	return func(srv *server) error {
+		if srv.Handler == nil {
+			srv.Handler = chi.NewRouter()
+		}
+
+		mux, ok := srv.Handler.(*chi.Mux)
+		if !ok {
+			return errors.New("cannot apply middleware to non-chi handler")
+		}
 
 		sh := &strHandler{
 			str: str,
@@ -84,8 +113,16 @@ func WithStorage(str storage.Storer) Option {
 // WithH2C allows piping the connection to a HTTP/2 server, which will hijack the request to use the HTTP/2 protocol
 // but over the initially supplied connection.
 func WithH2C() Option {
-	return func(srv *http.Server) error {
-		mux := srv.Handler.(*chi.Mux)
+	return func(srv *server) error {
+		if srv.Handler == nil {
+			srv.Handler = chi.NewRouter()
+		}
+
+		mux, ok := srv.Handler.(*chi.Mux)
+		if !ok {
+			return errors.New("cannot apply middleware to non-chi handler")
+		}
+
 		mux.Use(Intercept(IsH2C, h2c.NewHandler(
 			mux,
 
@@ -99,8 +136,15 @@ func WithH2C() Option {
 
 // WithGRPC enables GRPC to be served over the
 func WithGRPC(host string, server *grpc.Server) Option {
-	return func(srv *http.Server) error {
-		mux := srv.Handler.(*chi.Mux)
+	return func(srv *server) error {
+		if srv.Handler == nil {
+			srv.Handler = chi.NewRouter()
+		}
+
+		mux, ok := srv.Handler.(*chi.Mux)
+		if !ok {
+			return errors.New("cannot apply middleware to non-chi handler")
+		}
 		filters := []MatcherFunc{
 			IsGRPC,
 		}
@@ -112,6 +156,13 @@ func WithGRPC(host string, server *grpc.Server) Option {
 
 		mux.Use(Intercept(AllOf(filters...), server))
 
+		return nil
+	}
+}
+
+func WithTracerProvider(p *trace.TracerProvider) Option {
+	return func(s *server) error {
+		s.Trace = p
 		return nil
 	}
 }
