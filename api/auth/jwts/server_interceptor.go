@@ -165,16 +165,33 @@ func (o *ServerInterceptor) UnaryServerInterceptor(
 
 // ValidateCtx is a shared function that validates the metadata associated with this request has the required token,
 // and that the token has the expected permissions.
+//
+// A method whose configured scope is the empty string is treated as publicly callable: the interceptor
+// skips the metadata and JWT checks and returns the context unchanged (with no agent attached).
+// This is used for methods whose response carries no sensitive information — for example, the gRPC
+// reflection API or a public lookup like x40.dev.url.ManageURLs.Get, whose result is already
+// disclosed to anonymous users by the HTTP redirect handler.
 func (o *ServerInterceptor) ValidateCtx(
 	ctx context.Context,
 	method string,
 ) (context.Context, error) {
-	_, ok := o.Permissions[method]
+	scope, ok := o.Permissions[method]
 	if !ok {
 		return ctx, fmt.Errorf("%w: %s (%s)", auth.ErrCannotAuthorize, "no scope for the method", method)
 	}
 
 	m, ok := metadata.FromIncomingContext(ctx)
+
+	// An empty scope means the method is publicly callable. Skip the auth check, but
+	// still strip any Authorization header so it does not leak to the handler.
+	if scope == "" {
+		if !ok {
+			return ctx, nil
+		}
+
+		m.Delete(auth.MetaKeyAuthorization)
+		return metadata.NewIncomingContext(ctx, m), nil
+	}
 
 	if !ok {
 		return ctx, auth.ErrMissingMetadata

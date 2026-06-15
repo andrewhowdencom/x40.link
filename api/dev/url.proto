@@ -35,9 +35,14 @@ message NewRequest {
 //
 // TODO: Rename scope as permission.
 service ManageURLs {
-    // Get queries a URL, returning the URL if there was found (or none, if it was not found)
+    // Get queries a URL, returning the URL if there was found (or none, if it was not found).
+    //
+    // The destination of a short link is functionally public information — the HTTP
+    // redirect handler at server/storage.go::Redirect already discloses it to anonymous
+    // users. So this RPC is intentionally unauthenticated: a method with no scope is
+    // treated as publicly callable by the JWT server interceptor. The CLI's `resolve`
+    // subcommand relies on this.
     rpc Get(GetRequest) returns (Response) {
-        option (x40.dev.auth.oauth2_scope) = "api.x40.link/scopes/x40.dev.url.ManageURLs.Get";
     }
 
     // Post generates a new URL with a generated suffix.

@@ -331,7 +331,10 @@ func TestJWTValidation(t *testing.T) {
 		//
 		// See https://github.com/grpc/grpc/blob/master/doc/server-reflection.md
 		{
-			name: "no permissions required",
+			// A method with an empty scope is publicly callable. Even if a valid token is supplied,
+			// the interceptor must not require or parse it: the scope being empty means there is
+			// no scope to enforce, and the call must succeed. The agent is intentionally not set.
+			name: "no permissions required (token supplied)",
 			opts: []jwts.ServerInterceptorOptionFunc{
 				jwts.WithStaticKey(&tk.PublicKey),
 				jwts.WithParser(tParser),
@@ -355,7 +358,43 @@ func TestJWTValidation(t *testing.T) {
 			method: "TEST-ANONYMOUS-METHOD",
 
 			err:    nil,
-			retCtx: context.WithValue(context.Background(), storage.CtxKeyAgent, "sub:e7e90d06-b60b-11ee-993a-5bf4ddaa2f8d"),
+			retCtx: context.Background(),
+		},
+		// A method with an empty scope must be callable without any token at all. The interceptor
+		// must skip every auth check (no metadata, no Authorization header) and pass the context
+		// through unchanged, without setting an agent.
+		{
+			name: "no permissions required (no token, no metadata)",
+			opts: []jwts.ServerInterceptorOptionFunc{
+				jwts.WithAddedPermissions(map[string]string{
+					"TEST-ANONYMOUS-METHOD": "",
+				}),
+			},
+
+			ctx:    context.Background(),
+			method: "TEST-ANONYMOUS-METHOD",
+
+			err:    nil,
+			retCtx: context.Background(),
+		},
+		{
+			name: "no permissions required (no token, metadata present)",
+			opts: []jwts.ServerInterceptorOptionFunc{
+				jwts.WithAddedPermissions(map[string]string{
+					"TEST-ANONYMOUS-METHOD": "",
+				}),
+			},
+
+			ctx: metadata.NewIncomingContext(
+				context.Background(),
+				metadata.New(map[string]string{
+					"some-other-header": "some-other-value",
+				}),
+			),
+			method: "TEST-ANONYMOUS-METHOD",
+
+			err:    nil,
+			retCtx: context.Background(),
 		},
 		{
 			name: "all ok, has agent context",
