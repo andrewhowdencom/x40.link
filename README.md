@@ -16,6 +16,28 @@ Probably, do not, at this point. I'm working on this project instead of full-tim
 project is shaky at best. I'm stabilizing this solution's network APIs and client implementations
 before the code solution is even reasonably stable.
 
+### Command-Line
+
+The CLI binary has two subcommands, both of which take a short URL or destination URL as a positional
+argument.
+
+**Create a short link** (`@`):
+
+    @ https://my.destination.url/path
+
+    @ https://source.domain/path https://my.destination.url/path
+
+The first form generates a random short URL on the default domain. The second form lets you supply
+the short URL explicitly. This subcommand requires OAuth credentials.
+
+**Look up a short link's destination** (`@ resolve`):
+
+    @ resolve https://source.domain/path
+
+Prints the URL the short link redirects to. The destination of a short link is functionally public
+information (the HTTP redirect already discloses it to anonymous users), so this subcommand does
+not require authentication.
+
 ## Understanding this work
 
 This project functions as a demonstration of work. In the future, I will likely cannibalize it for the
