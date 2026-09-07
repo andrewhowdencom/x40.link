@@ -64,3 +64,61 @@ Generated code under `api/gen/` is gitignored (see `.gitignore`, under
 protobuf/generate`, which runs `buf generate` from the `api/`
 directory. The `buf.lock` pins the tool versions; do not commit a
 diff in the lockfile unless you have intentionally upgraded `buf`.
+
+## Observability
+
+The server emits OpenTelemetry traces and metrics. The pipeline is
+initialised in `otel.Init`, called from `cmd/serve.go::RunServe` before
+the server starts listening. The OTel SDK is configured via the existing
+`cfg/cfg.go` flag-set pattern plus standard OTel SDK env vars
+(`OTEL_EXPORTER_OTLP_ENDPOINT`, `OTEL_SERVICE_NAME`, etc.).
+
+### What gets emitted
+
+* **Span names** are business-operation names defined in `AGENTS.md`:
+  `create_link`, `resolve_link`, `redirect`, `storage.lookup`,
+  `storage.write`. These are emitted via the OTel auto-instrumentation
+  libraries (`otelhttp`, `otelgrpc`) with span-name formatters that
+  rename the default method/path names.
+* **Custom business metrics** under the `x40.link` namespace:
+  `links.created`, `links.resolved`, `links.not_found`,
+  `storage.errors`. The first three carry a `storage` label
+  (`boltdb`, `hashmap`, `yaml`, `firestore`) and a `surface` label
+  (`http`, `grpc`); the last carries `storage` and `op` (`lookup`,
+  `write`).
+* **Go runtime metrics** (`process.runtime.go.*`) and host metrics.
+* **HTTP / gRPC semantic-convention metrics** (`http.server.request.duration`,
+  `rpc.server.duration`, etc.) from the contrib libraries.
+
+### Local development
+
+The default OTLP endpoint is `cloudtrace.googleapis.com:4317`. To send
+data to a local collector instead, set the standard OTel env var:
+
+```bash
+OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317 ./x40.link serve \
+    --storage.boltdb.file /tmp/x40.link.db
+```
+
+A runnable collector config is in `docs/content/how-to/observe-locally.md`.
+
+### Production (Cloud Run)
+
+The Cloud Run service account needs two IAM roles:
+
+* `roles/cloudtrace.agent` — write traces to Cloud Trace.
+* `roles/monitoring.metricWriter` — write metrics to Cloud Monitoring.
+
+Application Default Credentials (via the Cloud Run metadata server)
+authenticate the OTel exporter against these endpoints; no service
+account key file is required inside the container.
+
+The `service.version` resource attribute is set from `version.Version`,
+which is overridden at link time via:
+
+```
+go build -ldflags "-X github.com/andrewhowdencom/x40.link/version.Version=<value>" main.go
+```
+
+The `task bin/*` build commands and the `Containerfile` both inject this
+flag. When unset, the value is `"unknown"`.
