@@ -98,13 +98,19 @@ func X40PermissionsList() []string {
 func NewGRPCMux(storer storage.Storer, opts ...grpc.ServerOption) *grpc.Server {
 	m := grpc.NewServer(opts...)
 
-	gendev.RegisterManageURLsServer(m, &dev.URL{
+	urlSvc := &dev.URL{
 		Storer: storer,
 		Enricher: (&dev.URLEnricher{
 			Domain: "x40.link",
 			Path:   uid.New(uid.TypeRandom),
 		}).Enrich,
-	})
+	}
+
+	// Wrap the service in dev.instrumentedURL so spans emitted by the
+	// otelgrpc interceptor are renamed from the gRPC method name
+	// (e.g. "/x40.dev.url.ManageURLs/Get") to the business operation
+	// name defined in AGENTS.md ("resolve_link", "create_link").
+	gendev.RegisterManageURLsServer(m, dev.InstrumentURL(urlSvc))
 
 	reflection.Register(m)
 

@@ -7,13 +7,42 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/andrewhowdencom/x40.link/server/message"
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 )
+
+// SpanNameRedirect is the OpenTelemetry span name emitted by the HTTP
+// redirect handler. Defined here so it can be referenced by tests and
+// dashboards without depending on the package internals.
+const SpanNameRedirect = "redirect"
+
+// WithOtel wraps the server's standard request chain in
+// otelhttp.NewMiddleware so the HTTP redirect emits a span named
+// SpanNameRedirect. gRPC requests are filtered out (otelgrpc handles
+// them independently) and the chi `Intercept` middleware on the mux
+// routes them away from the standard chain before otelhttp sees them.
+func WithOtel() Option {
+	return func(srv *http.Server) error {
+		mux := srv.Handler.(*chi.Mux)
+
+		mux.Use(otelhttp.NewMiddleware(SpanNameRedirect,
+			otelhttp.WithSpanNameFormatter(func(_ string, _ *http.Request) string {
+				return SpanNameRedirect
+			}),
+			otelhttp.WithFilter(func(r *http.Request) bool {
+				return r.Header.Get(message.HeaderContentType) != message.MIMEGRPC
+			}),
+		))
+
+		return nil
+	}
+}
 
 // Option is a function type that modifies the behavior of the server
 type Option func(*http.Server) error
