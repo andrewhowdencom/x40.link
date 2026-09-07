@@ -10,6 +10,9 @@ import (
 
 	"github.com/andrewhowdencom/x40.link/storage"
 	"go.etcd.io/bbolt"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 // Err* are sentinel errors
@@ -19,6 +22,17 @@ var (
 	ErrDataCorrupt           = errors.New("data returned from the database corrupted")
 
 	txBucketName = []byte("short-links")
+)
+
+// tracer is the package's OTel tracer. When no TracerProvider is set,
+// this returns a no-op tracer.
+func tracer() oteltrace.Tracer { return otel.Tracer("x40.link/boltdb") }
+
+// Span name constants. Exported so tests and dashboards can reference
+// them by name without depending on internal strings.
+const (
+	SpanNameStorageLookup = "storage.lookup"
+	SpanNameStorageWrite  = "storage.write"
 )
 
 // Option modifies the bolt options, allowing the user to set some property of the database.
@@ -73,10 +87,16 @@ func WithFileLockWait(dur time.Duration) Option {
 }
 
 // Get returns a URL, given another input URL
-func (b *BoltDB) Get(_ context.Context, in *url.URL) (*url.URL, error) {
+func (b *BoltDB) Get(ctx context.Context, in *url.URL) (*url.URL, error) {
+	ctx, span := tracer().Start(ctx, SpanNameStorageLookup, oteltrace.WithAttributes(
+		attribute.String("db.system", "boltdb"),
+		attribute.String("db.operation", "read"),
+	))
+	defer span.End()
+
 	var u *url.URL
 
-	if err := b.db.View(func(tx *bbolt.Tx) error {
+	err := b.db.View(func(tx *bbolt.Tx) error {
 		// If there's no bucket created, no put operations can have been run. Ergo, the key cannot exist.
 		b := tx.Bucket(txBucketName)
 		if b == nil {
@@ -95,7 +115,9 @@ func (b *BoltDB) Get(_ context.Context, in *url.URL) (*url.URL, error) {
 		}
 
 		return nil
-	}); err != nil {
+	})
+	if err != nil {
+		span.RecordError(err)
 		return nil, err
 	}
 
@@ -103,8 +125,14 @@ func (b *BoltDB) Get(_ context.Context, in *url.URL) (*url.URL, error) {
 }
 
 // Put saves a URL to the datastore
-func (b *BoltDB) Put(_ context.Context, f *url.URL, t *url.URL) error {
-	return b.db.Update(func(tx *bbolt.Tx) error {
+func (b *BoltDB) Put(ctx context.Context, f *url.URL, t *url.URL) error {
+	ctx, span := tracer().Start(ctx, SpanNameStorageWrite, oteltrace.WithAttributes(
+		attribute.String("db.system", "boltdb"),
+		attribute.String("db.operation", "write"),
+	))
+	defer span.End()
+
+	err := b.db.Update(func(tx *bbolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists(txBucketName)
 		if err != nil {
 			return fmt.Errorf("%w: %s", ErrFailedToTX, err)
@@ -116,4 +144,10 @@ func (b *BoltDB) Put(_ context.Context, f *url.URL, t *url.URL) error {
 
 		return nil
 	})
+	if err != nil {
+		span.RecordError(err)
+		return err
+	}
+
+	return nil
 }
