@@ -88,7 +88,7 @@ func WithFileLockWait(dur time.Duration) Option {
 
 // Get returns a URL, given another input URL
 func (b *BoltDB) Get(ctx context.Context, in *url.URL) (*url.URL, error) {
-	ctx, span := tracer().Start(ctx, SpanNameStorageLookup, oteltrace.WithAttributes(
+	_, span := tracer().Start(ctx, SpanNameStorageLookup, oteltrace.WithAttributes(
 		attribute.String("db.system", "boltdb"),
 		attribute.String("db.operation", "read"),
 	))
@@ -126,7 +126,7 @@ func (b *BoltDB) Get(ctx context.Context, in *url.URL) (*url.URL, error) {
 
 // Put saves a URL to the datastore
 func (b *BoltDB) Put(ctx context.Context, f *url.URL, t *url.URL) error {
-	ctx, span := tracer().Start(ctx, SpanNameStorageWrite, oteltrace.WithAttributes(
+	_, span := tracer().Start(ctx, SpanNameStorageWrite, oteltrace.WithAttributes(
 		attribute.String("db.system", "boltdb"),
 		attribute.String("db.operation", "write"),
 	))

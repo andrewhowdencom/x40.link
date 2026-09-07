@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
-	oteltrace "go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/trace/noop"
 )
 
 // withSpanRecorder sets the global TracerProvider to one backed by an
@@ -32,7 +32,7 @@ func withSpanRecorder(t *testing.T) *tracetest.SpanRecorder {
 // startSpanInCtx creates a context with an open span named name, plus a
 // defer-able End callback. Used by the rename tests to simulate the
 // otelgrpc interceptor's parent span.
-func startSpanInCtx(t *testing.T, ctx context.Context, name string) (context.Context, func()) {
+func startSpanInCtx(ctx context.Context, t *testing.T, name string) (context.Context, func()) {
 	t.Helper()
 
 	ctx, span := otel.Tracer("test").Start(ctx, name)
@@ -40,7 +40,7 @@ func startSpanInCtx(t *testing.T, ctx context.Context, name string) (context.Con
 }
 
 func TestInstrumentedURL_GetRenamesSpanToResolveLink(t *testing.T) {
-	t.Parallel()
+	// No t.Parallel: this test mutates the global OTel TracerProvider.
 
 	rec := withSpanRecorder(t)
 
@@ -57,7 +57,7 @@ func TestInstrumentedURL_GetRenamesSpanToResolveLink(t *testing.T) {
 
 	// Simulate the parent span that otelgrpc would create on the way
 	// into the handler. The wrapper must rename it.
-	ctx, end := startSpanInCtx(t, context.Background(), "/x40.dev.url.ManageURLs/Get")
+	ctx, end := startSpanInCtx(context.Background(), t, "/x40.dev.url.ManageURLs/Get")
 
 	resp, err := wrapped.Get(ctx, &gendev.GetRequest{Url: "https://example.local/foo"})
 	require.NoError(t, err)
@@ -72,7 +72,7 @@ func TestInstrumentedURL_GetRenamesSpanToResolveLink(t *testing.T) {
 }
 
 func TestInstrumentedURL_NewRenamesSpanToCreateLink(t *testing.T) {
-	t.Parallel()
+	// No t.Parallel: this test mutates the global OTel TracerProvider.
 
 	rec := withSpanRecorder(t)
 
@@ -83,7 +83,7 @@ func TestInstrumentedURL_NewRenamesSpanToCreateLink(t *testing.T) {
 	}
 	wrapped := InstrumentURL(inner, "hashmap")
 
-	ctx, end := startSpanInCtx(t, context.Background(), "/x40.dev.url.ManageURLs/New")
+	ctx, end := startSpanInCtx(context.Background(), t, "/x40.dev.url.ManageURLs/New")
 
 	resp, err := wrapped.New(ctx, &gendev.NewRequest{
 		On:     &gendev.RedirectOn{Host: "example.local", Path: "/foo"},
@@ -104,20 +104,20 @@ func TestInstrumentedURL_NewRenamesSpanToCreateLink(t *testing.T) {
 // expressed as `var _ gendev.ManageURLsServer = (*instrumentedURL)(nil)`
 // in url_otel.go, but a runtime assertion keeps the test self-documenting.
 func TestInstrumentedURL_Compiles(t *testing.T) {
-	t.Parallel()
+	// No t.Parallel: this test mutates the global OTel TracerProvider.
 
 	var _ gendev.ManageURLsServer = (*instrumentedURL)(nil)
 
 	// And: a no-op trace provider is acceptable; renaming a no-op span
 	// must not panic.
 	prevTP := otel.GetTracerProvider()
-	otel.SetTracerProvider(oteltrace.NewNoopTracerProvider())
+	otel.SetTracerProvider(noop.NewTracerProvider())
 	t.Cleanup(func() { otel.SetTracerProvider(prevTP) })
 
 	inner := &URL{Storer: test.New()}
 	wrapped := InstrumentURL(inner, "hashmap")
 
-	ctx, end := startSpanInCtx(t, context.Background(), "/x40.dev.url.ManageURLs/Get")
+	ctx, end := startSpanInCtx(context.Background(), t, "/x40.dev.url.ManageURLs/Get")
 	_, _ = wrapped.Get(ctx, &gendev.GetRequest{Url: "https://nope.local"})
 	end()
 	// Pass criterion: no panic.

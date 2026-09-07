@@ -19,14 +19,11 @@ func OptsFromViper() ([]grpc.ServerOption, error) {
 	opts := []grpc.ServerOption{}
 
 	// otelgrpc emits the parent span per RPC and provides server-side
-	// metrics. We always include these interceptors — when otel.Init
-	// hasn't been called, the OTel SDK falls back to a no-op tracer /
-	// meter provider, so the cost is negligible and the wiring remains
-	// unconditional across configurations.
+	// metrics. NewServerHandler in v0.59.0 is a unified stats handler
+	// that handles both tracing and metrics — the legacy
+	// UnaryServerInterceptor / StreamServerInterceptor are deprecated.
 	opts = append(opts,
 		grpc.StatsHandler(otelgrpc.NewServerHandler()),
-		grpc.UnaryInterceptor(otelgrpc.UnaryServerInterceptor()),
-		grpc.StreamInterceptor(otelgrpc.StreamServerInterceptor()),
 	)
 
 	// The interceptor is a soft dependency — it can fail. Here, we're indicating that failure through the
