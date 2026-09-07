@@ -15,7 +15,7 @@ import (
 // Injectors from wire.go:
 
 func WireGRPCServer() (*grpc.Server, error) {
-	storer, err := di.WireStorage()
+	storer, _, err := di.WireStorage()
 	if err != nil {
 		return nil, err
 	}

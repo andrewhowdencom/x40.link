@@ -95,13 +95,16 @@ func WithListenAddress(addr string) Option {
 	}
 }
 
-// WithStorage allows starting the service with a specific storage engine.
-func WithStorage(str storage.Storer) Option {
+// WithStorage allows starting the service with a specific storage
+// engine. The supplied name is used as the "storage" label on the
+// custom business counters emitted by the redirect handler.
+func WithStorage(str storage.Storer, name string) Option {
 	return func(srv *http.Server) error {
 		mux := srv.Handler.(*chi.Mux)
 
-		sh := &strHandler{
-			str: str,
+		sh := &instrumentedRedirect{
+			inner:   &strHandler{str: str},
+			storage: name,
 		}
 
 		mux.Get("/*", sh.Redirect)

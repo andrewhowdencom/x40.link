@@ -92,7 +92,7 @@ func TestNewServer_WithStorage(t *testing.T) {
 	)
 	assert.Nil(t, err)
 
-	srv, err := server.New(server.WithStorage(storage))
+	srv, err := server.New(server.WithStorage(storage, "hashmap"))
 	assert.Nil(t, err)
 
 	w := httptest.NewRecorder()

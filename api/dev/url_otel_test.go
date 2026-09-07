@@ -53,7 +53,7 @@ func TestInstrumentedURL_GetRenamesSpanToResolveLink(t *testing.T) {
 	))
 
 	inner := &URL{Storer: str}
-	wrapped := &instrumentedURL{inner: inner}
+	wrapped := InstrumentURL(inner, "hashmap")
 
 	// Simulate the parent span that otelgrpc would create on the way
 	// into the handler. The wrapper must rename it.
@@ -81,7 +81,7 @@ func TestInstrumentedURL_NewRenamesSpanToCreateLink(t *testing.T) {
 		Storer:   str,
 		Enricher: func(_, _ *url.URL) error { return nil },
 	}
-	wrapped := &instrumentedURL{inner: inner}
+	wrapped := InstrumentURL(inner, "hashmap")
 
 	ctx, end := startSpanInCtx(t, context.Background(), "/x40.dev.url.ManageURLs/New")
 
@@ -115,7 +115,7 @@ func TestInstrumentedURL_Compiles(t *testing.T) {
 	t.Cleanup(func() { otel.SetTracerProvider(prevTP) })
 
 	inner := &URL{Storer: test.New()}
-	wrapped := &instrumentedURL{inner: inner}
+	wrapped := InstrumentURL(inner, "hashmap")
 
 	ctx, end := startSpanInCtx(t, context.Background(), "/x40.dev.url.ManageURLs/Get")
 	_, _ = wrapped.Get(ctx, &gendev.GetRequest{Url: "https://nope.local"})
