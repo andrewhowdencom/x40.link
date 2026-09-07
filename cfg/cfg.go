@@ -101,6 +101,15 @@ var (
 	StorageFirestoreProject = &V{Path: "storage.firestore.project", Default: "", Usage: "The Google Cloud project to use the default firebase storage for", mu: &sync.Mutex{}}
 
 	Timeout = &String{V: V{Path: "timeout", Default: "1m", Usage: "The fallback timeout across the application", mu: &sync.Mutex{}}}
+
+	// OTEL* is configuration related to the OpenTelemetry tracing / metrics
+	// pipeline. The OTel SDK also reads standard env vars (e.g.
+	// OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_SERVICE_NAME), which take precedence
+	// over these flags at runtime.
+	OTELEnabled = &Bool{V: V{Path: "otel.enabled", Default: true, Usage: "Emit OpenTelemetry traces and metrics from the server", mu: &sync.Mutex{}}}
+	OTELExporterEndpoint = &String{V: V{Path: "otel.exporter.endpoint", Default: "cloudtrace.googleapis.com:4317", Usage: "OTLP/gRPC endpoint for traces and metrics", mu: &sync.Mutex{}}}
+	OTELServiceName      = &String{V: V{Path: "otel.service.name", Default: "x40.link", Usage: "service.name resource attribute", mu: &sync.Mutex{}}}
+	OTELResourceAttributes = &String{V: V{Path: "otel.resource.attributes", Default: "", Usage: "Comma-separated key=value resource attributes", mu: &sync.Mutex{}}}
 )
 
 // AddFlagTo accepts a flag set, and adds the flag to it. It also binds that flag to the Viper configuration.
