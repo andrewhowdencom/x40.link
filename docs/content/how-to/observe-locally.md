@@ -64,6 +64,22 @@ OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317 \
 Spans and metrics should now appear in `/tmp/x40-link-otlp.jsonl`
 and on the collector's debug output.
 
+## What the default endpoint is for
+
+The default `--otel.exporter.endpoint` is `localhost:4317`. This
+matches the [Cloud Run sidecar pattern](https://cloud.google.com/run/docs/deploying#sidecars),
+where the OpenTelemetry Collector runs as a sidecar container on
+the same instance as `x40.link` and listens on the loopback
+interface. The application talks to it in plaintext; the sidecar
+forwards to Google Cloud Trace and Cloud Monitoring with TLS over
+Google's internal network.
+
+If you want to export directly to Cloud Trace instead of via a
+sidecar, set `--otel.exporter.endpoint=cloudtrace.googleapis.com:443`
+and `--otel.exporter.insecure=false`. The endpoint must be `:443`
+(Google's public API runs TLS on the standard HTTPS port) and
+`insecure=false` so the OTLP exporter performs the TLS handshake.
+
 ## What you should see
 
 * **Span names** are business-operation names — `create_link`,

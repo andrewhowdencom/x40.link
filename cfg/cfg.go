@@ -107,7 +107,8 @@ var (
 	// OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_SERVICE_NAME), which take precedence
 	// over these flags at runtime.
 	OTELEnabled = &Bool{V: V{Path: "otel.enabled", Default: true, Usage: "Emit OpenTelemetry traces and metrics from the server", mu: &sync.Mutex{}}}
-	OTELExporterEndpoint = &String{V: V{Path: "otel.exporter.endpoint", Default: "cloudtrace.googleapis.com:4317", Usage: "OTLP/gRPC endpoint for traces and metrics", mu: &sync.Mutex{}}}
+	OTELExporterEndpoint = &String{V: V{Path: "otel.exporter.endpoint", Default: "localhost:4317", Usage: "OTLP/gRPC endpoint for traces and metrics. Defaults to a local sidecar collector; override with the OTEL_EXPORTER_OTLP_ENDPOINT env var for direct export to Cloud Trace (cloudtrace.googleapis.com:443) or another collector", mu: &sync.Mutex{}}}
+	OTELExporterInsecure = &Bool{V: V{Path: "otel.exporter.insecure", Default: true, Usage: "Disable TLS on the OTLP/gRPC connection. Leave true when targeting a sidecar/local collector; set to false (and use port 443) when exporting directly to Cloud Trace or a TLS-fronted collector", mu: &sync.Mutex{}}}
 	OTELServiceName      = &String{V: V{Path: "otel.service.name", Default: "x40.link", Usage: "service.name resource attribute", mu: &sync.Mutex{}}}
 	OTELResourceAttributes = &String{V: V{Path: "otel.resource.attributes", Default: "", Usage: "Comma-separated key=value resource attributes", mu: &sync.Mutex{}}}
 )
