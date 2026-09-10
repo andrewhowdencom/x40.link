@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"strings"
 
@@ -22,7 +23,23 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	otelcontribruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
-)// noopShutdown is returned when OTel is disabled or when the providers fail
+	"google.golang.org/grpc"
+)
+
+// ipv4Dialer returns a grpc.DialOption that forces IPv4 dialing on the
+// OTLP/gRPC connection.
+//
+// Cloud Run's network can resolve cloudtrace.googleapis.com to an
+// IPv6 address first (Happy Eyeballs, RFC 6555) and then time out
+// before the IPv4 fallback completes, causing metric exports to fail
+// with "i/o timeout". Forcing IPv4 at the dialer level short-circuits
+// the IPv6 attempt entirely; the destination is reachable via IPv4
+// from Cloud Run.
+func ipv4Dialer() grpc.DialOption {
+	return grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+		return (&net.Dialer{}).DialContext(ctx, "tcp4", addr)
+	})
+}// noopShutdown is returned when OTel is disabled or when the providers fail
 // to construct. Both call sites are safe: the returned function can be
 // invoked any number of times without panicking.
 func noopShutdown(_ context.Context) error { return nil }
@@ -115,6 +132,7 @@ func buildTracerProvider(ctx context.Context, res *resource.Resource) (*sdktrace
 	exp, err := otlptracegrpc.New(ctx,
 		otlptracegrpc.WithEndpoint(cfg.OTELExporterEndpoint.Value()),
 		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithDialOption(ipv4Dialer()),
 	)
 	if err != nil {
 		return nil, err
@@ -133,6 +151,7 @@ func buildMeterProvider(ctx context.Context, res *resource.Resource) (*otelprom.
 	exp, err := otlpmetricgrpc.New(ctx,
 		otlpmetricgrpc.WithEndpoint(cfg.OTELExporterEndpoint.Value()),
 		otlpmetricgrpc.WithInsecure(),
+		otlpmetricgrpc.WithDialOption(ipv4Dialer()),
 	)
 	if err != nil {
 		return nil, err

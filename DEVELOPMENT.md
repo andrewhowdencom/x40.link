@@ -113,6 +113,14 @@ Application Default Credentials (via the Cloud Run metadata server)
 authenticate the OTel exporter against these endpoints; no service
 account key file is required inside the container.
 
+The OTLP exporter dials over **IPv4 only**. Cloud Run's network
+configuration can resolve `cloudtrace.googleapis.com` to an IPv6
+address and time out before the IPv4 fallback completes, causing
+the metric export to fail with `i/o timeout`. Forcing IPv4 at the
+dialer level avoids the IPv6 path entirely. See `otel/ipv4_dialer.go`
+(or the `ipv4Dialer` function in `otel/init.go`) for the implementation;
+no configuration is required — the dialer is unconditionally applied.
+
 The `service.version` resource attribute is set from `version.Version`,
 which is overridden at link time via:
 
