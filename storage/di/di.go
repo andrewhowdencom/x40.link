@@ -25,48 +25,53 @@ var (
 // WireStorage generates a storage engine from the Viper based configuration. Fails
 // if there are no configuration values supplied.
 //
+// Returns the resolved Storer and a stable name identifying the
+// backend ("hashmap", "yaml", "boltdb", "firestore"). The name is
+// consumed by the server's instrumentation layer to label custom
+// business counters.
+//
 // Doesn't actually use wire (yet)
 //
 // TODO: Rewrite this with the new configuration format.
-func WireStorage() (storage.Storer, error) {
+func WireStorage() (storage.Storer, string, error) {
 	if viper.GetBool(cfg.StorageHashMap.Path) {
-		return memory.NewHashTable(), nil
+		return memory.NewHashTable(), "hashmap", nil
 	}
 
 	if path := viper.GetString(cfg.StorageYamlFile.Path); path != "" {
 		f, err := os.Open(path)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", ErrCannotResolveStorage, err)
+			return nil, "", fmt.Errorf("%w: %s", ErrCannotResolveStorage, err)
 		}
 
 		y, err := yaml.New(memory.NewHashTable(), f)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", ErrCannotResolveStorage, err)
+			return nil, "", fmt.Errorf("%w: %s", ErrCannotResolveStorage, err)
 		}
 
-		return y, nil
+		return y, "yaml", nil
 	}
 
 	if path := viper.GetString(cfg.StorageBoltDBFile.Path); path != "" {
 		db, err := boltdb.New(path)
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", ErrCannotResolveStorage, err)
+			return nil, "", fmt.Errorf("%w: %s", ErrCannotResolveStorage, err)
 		}
 
-		return db, nil
+		return db, "boltdb", nil
 	}
 
 	if project := viper.GetString(cfg.StorageFirestoreProject.Path); project != "" {
 		client, err := firestore.NewClient(context.Background(), project)
 
 		if err != nil {
-			return nil, fmt.Errorf("%w: %s", ErrCannotResolveStorage, err)
+			return nil, "", fmt.Errorf("%w: %s", ErrCannotResolveStorage, err)
 		}
 
 		return fsdb.Firestore{
 			Client: client,
-		}, nil
+		}, "firestore", nil
 	}
 
-	return nil, fmt.Errorf("%w: %s", ErrCannotResolveStorage, "no valid storage provider supplied")
+	return nil, "", fmt.Errorf("%w: %s", ErrCannotResolveStorage, "no valid storage provider supplied")
 }

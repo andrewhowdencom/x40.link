@@ -20,8 +20,11 @@ tasks:
     cmds:
       # Generate the required files
       - mkdir -p "dist/{{ .GOOS }}+{{ .GOARCH }}"
-      - go build -o "dist/{{ .GOOS }}+{{ .GOARCH }}/x40.link{{ exeExt }}" main.go
-      - go build -o "dist/{{ .GOOS }}+{{ .GOARCH }}/@{{ exeExt }}" cli/main.go 
+      # Inject the build-time version into the binary so the OTel
+      # service.version resource attribute carries the value populated
+      # by the build pipeline (typically GIT_REFSPEC).
+      - go build -ldflags "-X github.com/andrewhowdencom/x40.link/version.Version={{ .GIT_REFSPEC }}" -o "dist/{{ .GOOS }}+{{ .GOARCH }}/x40.link{{ exeExt }}" main.go
+      - go build -ldflags "-X github.com/andrewhowdencom/x40.link/version.Version={{ .GIT_REFSPEC }}" -o "dist/{{ .GOOS }}+{{ .GOARCH }}/@{{ exeExt }}" cli/main.go 
 
   bin/all:
     desc: "Builds the go binaries"

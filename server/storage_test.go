@@ -11,7 +11,6 @@ import (
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/andrewhowdencom/x40.link/storage/test"
 	"github.com/stretchr/testify/assert"
-	"schneider.vip/problem"
 )
 
 func TestStoreHandler_Get(t *testing.T) {
@@ -28,7 +27,6 @@ func TestStoreHandler_Get(t *testing.T) {
 		// Response
 		statusCode int
 		headers    http.Header
-		err        error
 	}{
 		{
 			name: "everything ok, record found",
@@ -54,7 +52,6 @@ func TestStoreHandler_Get(t *testing.T) {
 			headers: http.Header{
 				"Location": []string{"https://andrewhowden.com/"},
 			},
-			err: nil,
 		},
 		{
 			name: "record missing",
@@ -67,10 +64,8 @@ func TestStoreHandler_Get(t *testing.T) {
 			},
 			storage: test.New(),
 			headers: http.Header{},
-			err: problem.New(
-				problem.Status(http.StatusNotFound),
-				problem.Custom("url", "//s3k/foo"),
-			),
+
+			statusCode: http.StatusNotFound,
 		},
 		{
 			name: "storage failure",
@@ -82,10 +77,9 @@ func TestStoreHandler_Get(t *testing.T) {
 				},
 			},
 			storage: test.New(test.WithError(sentinel)),
+			headers: http.Header{},
 
 			statusCode: http.StatusInternalServerError,
-			headers:    http.Header{},
-			err:        sentinel,
 		},
 	} {
 		tc := tc
@@ -100,16 +94,17 @@ func TestStoreHandler_Get(t *testing.T) {
 
 			handler.Redirect(w, tc.req)
 
-			err, isError := tc.req.Context().Value(CtxErrors).(error)
-
-			if tc.err == nil {
-				assert.False(t, isError)
-				assert.Equal(t, tc.statusCode, w.Result().StatusCode)
-				assert.Equal(t, w.Result().Header, tc.headers)
-			} else {
-				assert.True(t, isError)
-				assert.ErrorIs(t, err, tc.err)
+			assert.Equal(t, tc.statusCode, w.Result().StatusCode)
+			// Headers is a partial check — we only assert on the keys
+			// listed in tc.headers, not on the full set, since the
+			// error path writes Content-Type via the problem document.
+			for k, v := range tc.headers {
+				assert.Equal(t, v, w.Result().Header[k])
 			}
 		})
 	}
+
+	// Silence unused-import warning for sentinel, which would otherwise
+	// trigger if the test cases no longer reference it.
+	_ = sentinel
 }

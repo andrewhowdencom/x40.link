@@ -54,12 +54,12 @@ func ResolveOptions() ([]Option, error) {
 		opts = append(opts, WithGRPC(cfg.ServerAPIGRPCHost.Value(), server))
 	}
 
-	storage, err := di2.WireStorage()
+	storage, name, err := di2.WireStorage()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrDependencyFailure, err)
 	}
 
-	opts = append(opts, WithStorage(storage))
+	opts = append(opts, WithStorage(storage, name))
 
 	return opts, nil
 }

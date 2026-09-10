@@ -21,6 +21,14 @@ var ErrDependencyFailure = errors.New("dependency failure")
 func ResolveOptions() ([]Option, error) {
 	opts := []Option{}
 
+	// OpenTelemetry middleware must be added before any routes are
+	// registered (chi requires middlewares to be defined before routes).
+	// When OTEL is disabled, WithOtel is a no-op as far as exporter
+	// traffic is concerned — the OTel SDK falls back to a no-op tracer.
+	if cfg.OTELEnabled.Value() {
+		opts = append(opts, WithOtel())
+	}
+
 	if addr := cfg.ServerListenAddress.Value(); addr != "" {
 		opts = append(opts, WithListenAddress(addr))
 	}
@@ -36,12 +44,12 @@ func ResolveOptions() ([]Option, error) {
 		opts = append(opts, WithGRPC(cfg.ServerAPIGRPCHost.Value(), server))
 	}
 
-	storage, err := strdi.WireStorage()
+	storage, name, err := strdi.WireStorage()
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrDependencyFailure, err)
 	}
 
-	opts = append(opts, WithStorage(storage))
+	opts = append(opts, WithStorage(storage, name))
 
 	return opts, nil
 }

@@ -124,7 +124,8 @@ You can learn more on [the go website](https://go.dev/blog/examples). Some tests
 
 Quite a bit of work remains in this project before it becomes "production-ready!" For example,
 
-1. Observability instrumentation (e.g., logs, metrics, traces, profiling)
+1. Observability instrumentation (logs and profiling; traces and metrics
+   are in as of this writing)
 1. Data Backups (e.g. Scheduled, Commit Logs and so on)
 1. Service Level Management (e.g., SLOs, SLAs)
 
