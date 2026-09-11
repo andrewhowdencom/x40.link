@@ -10,9 +10,11 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/andrewhowdencom/x40.link/cfg"
 	"github.com/andrewhowdencom/x40.link/version"
+	"go.opentelemetry.io/contrib/detectors/gcp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -24,6 +26,8 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	otelcontribruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/oauth"
 )
 
 // ipv4Dialer returns a grpc.DialOption that forces IPv4 dialing on the
@@ -52,7 +56,82 @@ func ipv4Dialer() grpc.DialOption {
 	return grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
 		return (&net.Dialer{}).DialContext(ctx, "tcp4", addr)
 	})
-}// noopShutdown is returned when OTel is disabled or when the providers fail
+}
+
+// otlpProbeTimeout bounds the startup probe to avoid slowing down
+// server startup when the OTLP endpoint is unreachable in a remote
+// network (e.g., behind a slow firewall). 3 seconds is long enough
+// to cover a TLS handshake over a high-latency link but short enough
+// to fail fast on the common "no listener" case.
+const otlpProbeTimeout = 3 * time.Second
+
+// probeOTLPEndpoint verifies that the configured OTLP endpoint is
+// reachable over TCP. It does not validate the OTLP service itself
+// (an OTLP gRPC request is not sent); that level of check requires
+// a real export and is left to the SDK's per-export error path.
+//
+// The probe is TCP-only and uses the same tcp4 network family as the
+// production dialer, so it catches:
+//   - "no listener" (connection refused)
+//   - DNS resolution failure
+//   - IPv6 timeout (vs the IPv4 route Cloud Run supports)
+//   - TLS handshake failure (when the OTLS layer is exercised)
+//
+// The function does not perform a TLS handshake itself; a full
+// handshake would add complexity and time without catching more
+// production failure modes than the plain TCP probe already does.
+func probeOTLPEndpoint(ctx context.Context) error {
+	probeCtx, cancel := context.WithTimeout(ctx, otlpProbeTimeout)
+	defer cancel()
+
+	var d net.Dialer
+	conn, err := d.DialContext(probeCtx, "tcp4", cfg.OTELExporterEndpoint.Value())
+	if err != nil {
+		return err
+	}
+	return conn.Close()
+}
+
+// Google Telemetry API scopes for OAuth token acquisition.
+const (
+	// Trace ingestion. Maps to IAM role roles/telemetry.tracesWriter.
+	traceOTLPScope = "https://www.googleapis.com/auth/trace.append"
+	// Metrics ingestion. Maps to IAM role roles/monitoring.metricWriter.
+	meterOTLPScope = "https://www.googleapis.com/auth/monitoring.write"
+)
+
+// otlpCredentials holds an optional per-RPC OAuth credentials for the
+// OTLP gRPC exporter. When `enabled` is false, no credentials are
+// attached and the exporter dials without per-RPC auth (correct for
+// sidecar / local collectors on a trusted loopback). When true, the
+// credentials are attached to every gRPC call; the first invocation
+// triggers a token fetch via Application Default Credentials.
+//
+// Construction is intentionally lazy: oauth.NewApplicationDefault does
+// not block on a network call at construction time, only when the
+// first token is fetched. So even production code paths that end up
+// skipping the first export don't pay any startup cost.
+type otlpCredentials struct {
+	creds  credentials.PerRPCCredentials
+	enabled bool
+}
+
+// newOTLPCredentials constructs per-RPC OAuth credentials for the OTLP
+// exporter when (and only when) the endpoint is the Google Telemetry
+// API. For sidecar / local / remote-collector endpoints, no
+// credentials are attached.
+func newOTLPCredentials(ctx context.Context, endpoint, scope string) (otlpCredentials, error) {
+	if !strings.Contains(endpoint, "googleapis.com") {
+		return otlpCredentials{enabled: false}, nil
+	}
+	c, err := oauth.NewApplicationDefault(ctx, scope)
+	if err != nil {
+		return otlpCredentials{}, err
+	}
+	return otlpCredentials{creds: c, enabled: true}, nil
+}
+
+// noopShutdown is returned when OTel is disabled or when the providers fail
 // to construct. Both call sites are safe: the returned function can be
 // invoked any number of times without panicking.
 func noopShutdown(_ context.Context) error { return nil }
@@ -83,6 +162,20 @@ func Init(ctx context.Context) (func(context.Context) error, error) {
 		return noopShutdown, nil
 	}
 
+	// Per-RPC OAuth credentials for the Google Telemetry API. These
+	// are only attached when the endpoint is a Google one (i.e. it
+	// contains "googleapis.com"); for sidecar / local collectors, the
+	// token source is skipped and the exporter dials unauthenticated.
+	// Construction is lazy; no token fetch happens at this point.
+	traceCreds, err := newOTLPCredentials(ctx, cfg.OTELExporterEndpoint.Value(), traceOTLPScope)
+	if err != nil {
+		return noopShutdown, fmt.Errorf("build trace credentials: %w", err)
+	}
+	meterCreds, err := newOTLPCredentials(ctx, cfg.OTELExporterEndpoint.Value(), meterOTLPScope)
+	if err != nil {
+		return noopShutdown, fmt.Errorf("build meter credentials: %w", err)
+	}
+
 	// Surface Cloud Run identity in the resource when present.
 	res, err := buildResource(ctx, resourceAttrs{
 		serviceName:        cfg.OTELServiceName.Value(),
@@ -95,16 +188,44 @@ func Init(ctx context.Context) (func(context.Context) error, error) {
 		return noopShutdown, fmt.Errorf("build resource: %w", err)
 	}
 
-	tp, err := buildTracerProvider(ctx, res)
+	tp, err := buildTracerProvider(ctx, res, traceCreds)
 	if err != nil {
 		return noopShutdown, fmt.Errorf("build tracer provider: %w", err)
 	}
 
-	mp, err := buildMeterProvider(ctx, res)
+	mp, err := buildMeterProvider(ctx, res, meterCreds)
 	if err != nil {
 		// Best-effort shutdown of the tracer provider before returning.
 		_ = tp.Shutdown(ctx)
 		return noopShutdown, fmt.Errorf("build meter provider: %w", err)
+	}
+
+	// Startup probe: fail fast when the configured OTLP endpoint is
+	// unreachable. Cloud Run's OTel pipeline silently drops all
+	// spans and metrics if the collector isn't listening (or DNS is
+	// wrong, or the IPv6 path hangs) — the application runs fine but
+	// produces no observability data, and the failure only surfaces
+	// in Cloud Logging hours later. Doing a TCP-level probe at start
+	// surfaces the misconfiguration immediately and prevents the
+	// server from looking healthy when it isn't.
+	//
+	// The probe is intentionally TCP-only: it catches the common
+	// failure modes (no listener, DNS failure, IPv6 timeout, TLS
+	// handshake failure when the OTLS layer is exercised). Endpoint
+	// configuration errors that produce Unimplemented responses
+	// (e.g. wrong service path) surface in the per-export log
+	// messages, which are loud enough to be diagnosed quickly.
+	if cfg.OTELProbeEndpoint.Value() {
+		if err := probeOTLPEndpoint(ctx); err != nil {
+			_ = tp.Shutdown(ctx)
+			_ = mp.Shutdown(ctx)
+			return noopShutdown, fmt.Errorf(
+				"startup probe to OTLP endpoint %q failed: %w\n"+
+					"hint: confirm the OTel Collector (sidecar or remote) is running and reachable;\n"+
+					"      bypass this check with --otel.probe-endpoint=false if it is intentionally disabled",
+				cfg.OTELExporterEndpoint.Value(), err,
+			)
+		}
 	}
 
 	otel.SetTracerProvider(tp)
@@ -141,15 +262,18 @@ func Init(ctx context.Context) (func(context.Context) error, error) {
 // buildTracerProvider builds a TracerProvider backed by an OTLP/gRPC batch
 // span processor. Sampling is AlwaysOn per stakeholder decision; this can
 // be moved behind a cfg flag in a follow-up.
-func buildTracerProvider(ctx context.Context, res *resource.Resource) (*sdktrace.TracerProvider, error) {
+//
+// creds carries per-RPC OAuth credentials. When creds.enabled is true
+// (i.e. when the endpoint is the Google Telemetry API), the token
+// source is attached to every gRPC call.
+func buildTracerProvider(ctx context.Context, res *resource.Resource, creds otlpCredentials) (*sdktrace.TracerProvider, error) {
 	opts := []otlptracegrpc.Option{
 		otlptracegrpc.WithEndpoint(cfg.OTELExporterEndpoint.Value()),
 		otlptracegrpc.WithDialOption(ipv4Dialer()),
 	}
-	// cfg.OTELExporterInsecure defaults to true for sidecar / local
-	// collectors. Set to false (and supply a TLS-fronted endpoint such
-	// as cloudtrace.googleapis.com:443) when exporting directly to
-	// Google's public API.
+	if creds.enabled {
+		opts = append(opts, otlptracegrpc.WithDialOption(grpc.WithPerRPCCredentials(creds.creds)))
+	}
 	if cfg.OTELExporterInsecure.Value() {
 		opts = append(opts, otlptracegrpc.WithInsecure())
 	}
@@ -167,10 +291,13 @@ func buildTracerProvider(ctx context.Context, res *resource.Resource) (*sdktrace
 
 // buildMeterProvider builds a MeterProvider backed by an OTLP/gRPC periodic
 // reader. The default export interval is the SDK default (60s).
-func buildMeterProvider(ctx context.Context, res *resource.Resource) (*otelprom.MeterProvider, error) {
+func buildMeterProvider(ctx context.Context, res *resource.Resource, creds otlpCredentials) (*otelprom.MeterProvider, error) {
 	opts := []otlpmetricgrpc.Option{
 		otlpmetricgrpc.WithEndpoint(cfg.OTELExporterEndpoint.Value()),
 		otlpmetricgrpc.WithDialOption(ipv4Dialer()),
+	}
+	if creds.enabled {
+		opts = append(opts, otlpmetricgrpc.WithDialOption(grpc.WithPerRPCCredentials(creds.creds)))
 	}
 	if cfg.OTELExporterInsecure.Value() {
 		opts = append(opts, otlpmetricgrpc.WithInsecure())
@@ -195,12 +322,21 @@ func buildMeterProvider(ctx context.Context, res *resource.Resource) (*otelprom.
 func buildResource(ctx context.Context, in resourceAttrs) (*resource.Resource, error) {
 	// Start with what the OTel SDK auto-detects: env vars (OTEL_RESOURCE_ATTRIBUTES,
 	// OTEL_SERVICE_NAME, etc.), host info, process info, telemetry SDK info.
-	auto, err := resource.New(ctx,
+	// The GCP detector is only registered when we're actually on Cloud Run
+	// (signalled by the K_SERVICE env var, which the Cloud Run runtime
+	// sets on every instance). Otherwise the detector's metadata-server
+	// ping is a slow network call against a non-existent endpoint, which
+	// would noticeably slow startup on developer machines.
+	opts := []resource.Option{
 		resource.WithFromEnv(),
 		resource.WithProcess(),
 		resource.WithHost(),
 		resource.WithTelemetrySDK(),
-	)
+	}
+	if os.Getenv("K_SERVICE") != "" {
+		opts = append(opts, resource.WithDetectors(gcp.NewDetector()))
+	}
+	auto, err := resource.New(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}

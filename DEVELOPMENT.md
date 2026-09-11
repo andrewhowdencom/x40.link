@@ -104,14 +104,34 @@ A runnable collector config is in `docs/content/how-to/observe-locally.md`.
 
 ### Production (Cloud Run)
 
-The Cloud Run service account needs two IAM roles:
+The Cloud Run service account needs these IAM roles:
 
-* `roles/cloudtrace.agent` — write traces to Cloud Trace.
-* `roles/monitoring.metricWriter` — write metrics to Cloud Monitoring.
+* `roles/telemetry.tracesWriter` — write traces to the Google
+  Telemetry API (which feeds Cloud Trace).
+* `roles/monitoring.metricWriter` — write metrics to Cloud
+  Monitoring.
 
-Application Default Credentials (via the Cloud Run metadata server)
-authenticate the OTel exporter against these endpoints; no service
-account key file is required inside the container.
+Both of these are needed because the OTel SDK's OTLP exporter
+targets the unified **Google Telemetry API** at
+`telemetry.googleapis.com:443` (not the legacy Cloud Trace v2
+endpoint at `cloudtrace.googleapis.com`, which only speaks the
+non-OTLP `google.devtools.cloudtrace.v2` protobuf).
+
+Application Default Credentials (via the Cloud Run metadata
+server) authenticate the exporter. The OTLP/gRPC client uses
+`grpc.WithPerRPCCredentials(oauth.NewApplicationDefault(...))`
+to inject per-RPC OAuth tokens with the
+`https://www.googleapis.com/auth/trace.append` (traces) and
+`https://www.googleapis.com/auth/monitoring.write` (metrics)
+scopes. The token source is created lazily — no token fetch
+happens until the first export attempt.
+
+The `gcp.NewDetector()` resource detector automatically populates
+Cloud Run-specific attributes (project, region, service revision)
+on the OTel Resource. The detector only runs when the `K_SERVICE`
+env var is set, which is the standard Cloud Run signal — on
+developer machines and in unit tests the detector is skipped so
+the metadata-server ping doesn't slow startup.
 
 #### Deployment patterns
 
@@ -120,34 +140,35 @@ env var, which takes precedence) controls where the OTLP/gRPC exporter
 sends data. The standard OTel `OTEL_EXPORTER_OTLP_ENDPOINT` env var
 takes precedence over the flag. Two patterns are supported:
 
-**Direct export to Cloud Trace (default)** — The application dials
-`cloudtrace.googleapis.com:443` with TLS. This is the standard
-out-of-the-box configuration and is what the flags default to. The
-service account above carries the IAM roles; the OTel exporter uses
-Application Default Credentials via the Cloud Run metadata server.
+**Direct export to the Google Telemetry API (default)** — The
+application dials `telemetry.googleapis.com:443` with TLS and
+per-RPC OAuth via Application Default Credentials. This is the
+standard out-of-the-box configuration and is what the flags
+default to. The service account above carries the IAM roles.
 
-* Endpoint: `cloudtrace.googleapis.com:443` (the default)
+* Endpoint: `telemetry.googleapis.com:443` (the default)
 * `--otel.exporter.insecure` (default `false`) — TLS
+* Credentials: ADC; no extra setup required inside Cloud Run
 
 **Sidecar collector** — The OTel Collector runs as a
 [Cloud Run sidecar container](https://cloud.google.com/run/docs/deploying#sidecars)
 on the same instance as `x40.link`, listening on `localhost:4317`
-over plaintext. The sidecar forwards to Google Cloud Trace and
-Cloud Monitoring over Google's internal network with TLS.
+over plaintext. The sidecar forwards to Google Telemetry API
+with TLS over Google's internal network. Set both via the OTel
+env vars:
 
-* Endpoint: `localhost:4317`
-* `--otel.exporter.insecure=true` (opt-in to plaintext on loopback)
-* Set both via the OTel env vars for clarity:
-
-  ```
-  OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
-  OTEL_EXPORTER_INSECURE=true
-  ```
+```
+OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
+OTEL_EXPORTER_INSECURE=true
+```
 
 The sidecar pattern is recommended for high-volume workloads: it
 provides buffering, retries, and queueing between the application
-and Google's API, and lets you swap out the backend (e.g., ship to
-a non-Google destination) without re-deploying the application.
+and Google's API, and lets you swap out the backend without
+re-deploying the application. When this pattern is in use the
+`otlpCredentials` plumbing in `otel/init.go` is short-circuited
+because the endpoint is not on `googleapis.com`; the sidecar
+handles its own auth to Google.
 
 #### IPv4-only dialing
 

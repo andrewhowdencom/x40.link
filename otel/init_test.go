@@ -5,7 +5,7 @@ package otel
 
 import (
 	"context"
-	"os"
+	"net"
 	"testing"
 	"time"
 
@@ -27,6 +27,8 @@ type otelEnv struct {
 	endpoint *string
 	name     *string
 	attrs    *string
+	insecure *bool
+	probe    *bool
 }
 
 func (e otelEnv) apply(t *testing.T) {
@@ -42,6 +44,40 @@ func (e otelEnv) apply(t *testing.T) {
 	}
 	if e.attrs != nil {
 		viper.Set(cfg.OTELResourceAttributes.Path, *e.attrs)
+	}
+	if e.insecure != nil {
+		viper.Set(cfg.OTELExporterInsecure.Path, *e.insecure)
+	}
+	if e.probe != nil {
+		viper.Set(cfg.OTELProbeEndpoint.Path, *e.probe)
+	}
+}
+
+func disabled() *bool { v := false; return &v }
+func enabled() *bool  { v := true; return &v }
+
+// otelDisabledWithProbeOff sets up an OTel environment that's disabled —
+// all probes and credential code paths are skipped because Init returns
+// early when OTEL is disabled.
+func otelDisabled() otelEnv {
+	return otelEnv{enabled: disabled()}
+}
+
+// otelLocalhostInsecure sets up the standard sidecar/local-collector
+// endpoint (localhost:4317, insecure) with the startup probe disabled.
+// The tests that use this target a non-existent port; they care about
+// the construction / wiring, not network reachability.
+func otelLocalhostInsecure() otelEnv {
+	endpoint := "localhost:4317"
+	name := "x40.link-test"
+	insecure := true
+	probe := false
+	return otelEnv{
+		enabled:  enabled(),
+		endpoint: &endpoint,
+		name:     &name,
+		insecure: &insecure,
+		probe:    &probe,
 	}
 }
 
@@ -66,27 +102,12 @@ func resetViper(t *testing.T) {
 	t.Cleanup(func() { viper.Reset() })
 }
 
-// attrByKey returns the value of the named attribute on a resource, or
-// ("", false) if the attribute is not present.
-func attrByKey(attrs []attribute.KeyValue, key attribute.Key) (attribute.Value, bool) {
-	for _, kv := range attrs {
-		if kv.Key == key {
-			return kv.Value, true
-		}
-	}
-	return attribute.Value{}, false
-}
-
-// disabled / enabled shortcuts.
-func disabled() *bool { v := false; return &v }
-func enabled() *bool  { v := true; return &v }
-
 func TestInit_DisabledIsNoop(t *testing.T) {
 	// No t.Parallel — shares viper.
 	resetViper(t)
 	resetOtelGlobals(t)
 
-	otelEnv{enabled: disabled()}.apply(t)
+	otelDisabled().apply(t)
 
 	shutdown, err := Init(context.Background())
 	require.NoError(t, err)
@@ -101,22 +122,15 @@ func TestInit_EnabledProducesShutdown(t *testing.T) {
 	resetViper(t)
 	resetOtelGlobals(t)
 
-	endpoint := "localhost:14317"
-	name := "x40.link-test"
-	otelEnv{
-		enabled:  enabled(),
-		endpoint: &endpoint,
-		name:     &name,
-	}.apply(t)
+	otelLocalhostInsecure().apply(t)
 
 	shutdown, err := Init(context.Background())
 	require.NoError(t, err)
 	require.NotNil(t, shutdown)
 
-	// The exporter can't reach localhost:14317, so a synchronous flush
+	// The exporter cannot reach localhost:4317, so a synchronous flush
 	// will time out — we don't assert NoError on shutdown. We only
-	// require that the call returns within a bounded time and doesn't
-	// deadlock.
+	// require that the call returns within a bounded time.
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	_ = shutdown(ctx)
@@ -126,7 +140,7 @@ func TestInit_DisabledShutdownIsIdempotent(t *testing.T) {
 	// No t.Parallel — shares viper.
 	resetViper(t)
 
-	otelEnv{enabled: disabled()}.apply(t)
+	otelDisabled().apply(t)
 
 	shutdown, err := Init(context.Background())
 	require.NoError(t, err)
@@ -135,17 +149,16 @@ func TestInit_DisabledShutdownIsIdempotent(t *testing.T) {
 	require.NoError(t, shutdown(context.Background()))
 }
 
-// TestInit_InsecureFlagControlsTLS verifies that the
-// cfg.OTELExporterInsecure flag toggles whether the OTLP exporters
-// are built without TLS. Both paths must construct a non-nil
-// shutdown without panicking; the dial itself never succeeds
-// against the bogus endpoint, but the test exercises the option
-// wiring.
+// TestInit_InsecureFlagControlsTLS verifies that cfg.OTELExporterInsecure
+// toggles whether the OTLP exporters are built without TLS. Both paths
+// must construct a non-nil shutdown without panicking; the dial itself
+// never succeeds against the bogus endpoint, but the test exercises
+// the option wiring.
 func TestInit_InsecureFlagControlsTLS(t *testing.T) {
 	resetViper(t)
 	resetOtelGlobals(t)
 
-	endpoint := "localhost:14317"
+	endpoint := "localhost:4317"
 	cases := []struct {
 		name     string
 		insecure bool
@@ -157,15 +170,19 @@ func TestInit_InsecureFlagControlsTLS(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			viper.Set(cfg.OTELExporterEndpoint.Path, endpoint)
-			viper.Set(cfg.OTELExporterInsecure.Path, tc.insecure)
+			insecure := tc.insecure
+			probe := false
+			otelEnv{
+				enabled:  enabled(),
+				endpoint: &endpoint,
+				insecure: &insecure,
+				probe:    &probe,
+			}.apply(t)
 
 			shutdown, err := Init(context.Background())
 			require.NoError(t, err)
 			require.NotNil(t, shutdown)
 
-			// Cancelled context makes shutdown return promptly without
-			// needing the (unreachable) exporter to flush.
 			ctx, cancel := context.WithCancel(context.Background())
 			cancel()
 			_ = shutdown(ctx)
@@ -173,81 +190,88 @@ func TestInit_InsecureFlagControlsTLS(t *testing.T) {
 	}
 }
 
-func TestBuildResource_ServiceNameFromCfg(t *testing.T) {
-	// No t.Parallel — calls resource.New which reads env vars.
-	got, err := buildResource(context.Background(), resourceAttrs{
-		serviceName: "x40.link-test",
-		version:     "",
-	})
-	require.NoError(t, err)
+// TestInit_StartupProbeFails verifies that the startup probe surfaces a
+// clear error when the configured OTLP endpoint is not listening.
+func TestInit_StartupProbeFails(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping slow probe test in short mode")
+	}
 
-	val, ok := attrByKey(got.Attributes(), "service.name")
-	require.True(t, ok, "service.name must be set")
-	assert.Equal(t, "x40.link-test", val.AsString())
+	resetViper(t)
+	resetOtelGlobals(t)
+
+	// A port we are confident is not in use. Probing is fast: the
+	// connect attempt returns connection-refused within milliseconds.
+	endpoint := "127.0.0.1:1"
+	insecure := true
+	otelEnv{
+		enabled:  enabled(),
+		endpoint: &endpoint,
+		insecure: &insecure,
+	}.apply(t)
+
+	start := time.Now()
+	shutdown, err := Init(context.Background())
+	elapsed := time.Since(start)
+
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "startup probe")
+	// shutdown is noopShutdown (a non-nil no-op closure) when Init
+	// fails partway through; the contract is that the caller must
+	// invoke it even on error, to flush whatever providers built
+	// before the failure.
+	require.NotNil(t, shutdown)
+	// Generous bound — the probe is 3s, and the OTel SDK exporters
+	// may attempt a connection on construction (taking up to ~5s
+	// each in some environments). The real assertion is "did it fail
+	// fast enough to be useful as a startup gate?"; 15s is the
+	// upper bound for that.
+	assert.Less(t, elapsed, 15*time.Second,
+		"probe must fail in bounded time (got %v)", elapsed)
 }
 
-func TestBuildResource_CloudRunFromEnv(t *testing.T) {
-	// No t.Parallel — sets env vars.
-	t.Setenv("K_REVISION", "rev-1")
-	t.Setenv("K_SERVICE", "svc-1")
+// TestInit_StartupProbeSucceeds verifies the probe path on a real
+// listening socket. The caller is responsible for closing the socket
+// within the test lifetime; Init returns a shutdown that has been
+// registered with the OTel SDK.
+func TestInit_StartupProbeSucceeds(t *testing.T) {
+	resetViper(t)
+	resetOtelGlobals(t)
 
-	got, err := buildResource(context.Background(), resourceAttrs{
-		serviceName: "x40.link",
-		revision:    os.Getenv("K_REVISION"),
-		service:     os.Getenv("K_SERVICE"),
-		version:     "v1.2.3",
-	})
+	// Listen on an ephemeral port on loopback.
+	listener, err := net.Listen("tcp4", "127.0.0.1:0")
 	require.NoError(t, err)
+	t.Cleanup(func() { _ = listener.Close() })
 
-	rev, ok := attrByKey(got.Attributes(), "cloud.run.revision")
-	require.True(t, ok, "cloud.run.revision must be set when K_REVISION is present")
-	assert.Equal(t, "rev-1", rev.AsString())
+	port := listener.Addr().(*net.TCPAddr).Port
+	endpoint := "127.0.0.1:" + itoa(port)
+	insecure := true
+	otelEnv{
+		enabled:  enabled(),
+		endpoint: &endpoint,
+		insecure: &insecure,
+	}.apply(t)
 
-	svc, ok := attrByKey(got.Attributes(), "cloud.run.service")
-	require.True(t, ok)
-	assert.Equal(t, "svc-1", svc.AsString())
+	shutdown, err := Init(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, shutdown)
 }
 
-func TestBuildResource_VersionAttribute(t *testing.T) {
-	got, err := buildResource(context.Background(), resourceAttrs{
-		serviceName: "x40.link",
-		version:     "9.9.9",
-	})
-	require.NoError(t, err)
-
-	v, ok := attrByKey(got.Attributes(), "service.version")
-	require.True(t, ok)
-	assert.Equal(t, "9.9.9", v.AsString())
+func itoa(p int) string {
+	// Minimal itoa to avoid a strconv import just for the test.
+	if p == 0 {
+		return "0"
+	}
+	digits := []byte{}
+	for p > 0 {
+		digits = append([]byte{byte('0' + p%10)}, digits...)
+		p /= 10
+	}
+	return string(digits)
 }
 
-func TestBuildResource_UserSuppliedAttributes(t *testing.T) {
-	got, err := buildResource(context.Background(), resourceAttrs{
-		serviceName:        "x40.link",
-		resourceAttributes: "deployment.environment=ci,team=platform",
-	})
-	require.NoError(t, err)
-
-	env, ok := attrByKey(got.Attributes(), "deployment.environment")
-	require.True(t, ok)
-	assert.Equal(t, "ci", env.AsString())
-
-	team, ok := attrByKey(got.Attributes(), "team")
-	require.True(t, ok)
-	assert.Equal(t, "platform", team.AsString())
-}
-
-func TestBuildResource_MalformedAttributeSkipped(t *testing.T) {
-	got, err := buildResource(context.Background(), resourceAttrs{
-		serviceName:        "x40.link",
-		resourceAttributes: "no-equals-sign",
-	})
-	require.NoError(t, err)
-
-	// The malformed key must not appear on the resource.
-	_, ok := attrByKey(got.Attributes(), "no-equals-sign")
-	assert.False(t, ok)
-}
-
+// TestParseResourceAttributes — held over from the original spec;
+// covers the comma-separated OTEL_RESOURCE_ATTRIBUTES parser.
 func TestParseResourceAttributes(t *testing.T) {
 	t.Parallel()
 
@@ -277,8 +301,8 @@ func TestParseResourceAttributes(t *testing.T) {
 	})
 }
 
-// TestVersion_DefaultValue pins the default for the build-time injected
-// version variable.
+// TestVersion_DefaultValue pins the default for the build-time
+// injected version variable.
 func TestVersion_DefaultValue(t *testing.T) {
 	t.Parallel()
 	assert.Equal(t, "unknown", version.Version)

@@ -66,11 +66,18 @@ and on the collector's debug output.
 
 ## What the default endpoint is for
 
-The default `--otel.exporter.endpoint` is `cloudtrace.googleapis.com:443`
+The default `--otel.exporter.endpoint` is `telemetry.googleapis.com:443`
 with TLS — i.e., out of the box the application exports directly to
-Cloud Trace. This is the standard direct-export configuration and
-works once the Cloud Run service account has the relevant IAM roles
-(`roles/cloudtrace.agent`, `roles/monitoring.metricWriter`).
+the unified **Google Telemetry API** over OTLP/gRPC. Authentication
+is handled via Application Default Credentials — in Cloud Run, the
+service account's metadata server; in dev with the SDK on a
+machine with no Google connection, you'd flip the flags to point
+at a local collector (see below).
+
+**Note on legacy endpoints:** `cloudtrace.googleapis.com` does not
+accept OTLP/gRPC — it speaks the older `google.devtools.cloudtrace.v2`
+protobuf. The default endpoint in this codebase is therefore the
+Telemetry API, not the legacy Cloud Trace endpoint.
 
 If you're running locally without a Cloud Run metadata server, you
 have two options:
