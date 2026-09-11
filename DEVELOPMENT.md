@@ -113,6 +113,54 @@ Application Default Credentials (via the Cloud Run metadata server)
 authenticate the OTel exporter against these endpoints; no service
 account key file is required inside the container.
 
+#### Deployment patterns
+
+The `otel.exporter.endpoint` flag (and the `OTEL_EXPORTER_OTLP_ENDPOINT`
+env var, which takes precedence) controls where the OTLP/gRPC exporter
+sends data. The standard OTel `OTEL_EXPORTER_OTLP_ENDPOINT` env var
+takes precedence over the flag. Two patterns are supported:
+
+**Direct export to Cloud Trace (default)** — The application dials
+`cloudtrace.googleapis.com:443` with TLS. This is the standard
+out-of-the-box configuration and is what the flags default to. The
+service account above carries the IAM roles; the OTel exporter uses
+Application Default Credentials via the Cloud Run metadata server.
+
+* Endpoint: `cloudtrace.googleapis.com:443` (the default)
+* `--otel.exporter.insecure` (default `false`) — TLS
+
+**Sidecar collector** — The OTel Collector runs as a
+[Cloud Run sidecar container](https://cloud.google.com/run/docs/deploying#sidecars)
+on the same instance as `x40.link`, listening on `localhost:4317`
+over plaintext. The sidecar forwards to Google Cloud Trace and
+Cloud Monitoring over Google's internal network with TLS.
+
+* Endpoint: `localhost:4317`
+* `--otel.exporter.insecure=true` (opt-in to plaintext on loopback)
+* Set both via the OTel env vars for clarity:
+
+  ```
+  OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
+  OTEL_EXPORTER_INSECURE=true
+  ```
+
+The sidecar pattern is recommended for high-volume workloads: it
+provides buffering, retries, and queueing between the application
+and Google's API, and lets you swap out the backend (e.g., ship to
+a non-Google destination) without re-deploying the application.
+
+#### IPv4-only dialing
+
+The OTLP/gRPC dialer is unconditionally forced to IPv4 (via a
+custom `grpc.WithContextDialer`). Cloud Run's network egress —
+both Serverless VPC Access and Direct VPC Egress — historically
+terminates the IPv6 path; Go's default DNS resolver (Happy
+Eyeballs, RFC 6555) prefers the AAAA record and the dial hangs
+until the per-attempt deadline expires before the IPv4 fallback
+completes. Forcing IPv4 short-circuits the IPv6 attempt. See
+`otel.init.ipv4Dialer` for the implementation. No configuration
+is required; the dialer is unconditionally applied.
+
 The `service.version` resource attribute is set from `version.Version`,
 which is overridden at link time via:
 

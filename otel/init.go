@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"os"
 	"strings"
 
@@ -22,7 +23,36 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	otelcontribruntime "go.opentelemetry.io/contrib/instrumentation/runtime"
-)// noopShutdown is returned when OTel is disabled or when the providers fail
+	"google.golang.org/grpc"
+)
+
+// ipv4Dialer returns a grpc.DialOption that forces IPv4 dialing on the
+// OTLP/gRPC connection.
+//
+// Cloud Run's network egress — both Serverless VPC Access and Direct
+// VPC Egress — historically terminates the IPv6 path. When the OTLP
+// dialer uses Go's default DNS resolver (Happy Eyeballs, RFC 6555),
+// the resolver prefers the AAAA record returned by the endpoint's
+// authoritative DNS; the dial then hangs until the per-attempt deadline
+// expires before the IPv4 fallback completes. The result is
+// `dial tcp [2001:4860:4844:400::]:4317: i/o timeout` failures on the
+// metric export, even though the destination is reachable over IPv4.
+//
+// Forcing the dialer to tcp4 short-circuits the IPv6 attempt entirely
+// and connects over the IPv4 route that Cloud Run's VPC egress
+// supports. This applies regardless of whether the endpoint is the
+// sidecar collector (Cloud Run sidecar pattern, on `localhost:4317`)
+// or a private collector reachable via Serverless VPC Access / Direct
+// VPC Egress — both rely on the same IPv4-only egress path.
+//
+// The dialer is unconditionally applied. On developer machines and
+// local collectors it has no effect (IPv4 is already the default);
+// on Cloud Run it sidesteps the IPv6 timeout.
+func ipv4Dialer() grpc.DialOption {
+	return grpc.WithContextDialer(func(ctx context.Context, addr string) (net.Conn, error) {
+		return (&net.Dialer{}).DialContext(ctx, "tcp4", addr)
+	})
+}// noopShutdown is returned when OTel is disabled or when the providers fail
 // to construct. Both call sites are safe: the returned function can be
 // invoked any number of times without panicking.
 func noopShutdown(_ context.Context) error { return nil }
@@ -112,10 +142,18 @@ func Init(ctx context.Context) (func(context.Context) error, error) {
 // span processor. Sampling is AlwaysOn per stakeholder decision; this can
 // be moved behind a cfg flag in a follow-up.
 func buildTracerProvider(ctx context.Context, res *resource.Resource) (*sdktrace.TracerProvider, error) {
-	exp, err := otlptracegrpc.New(ctx,
+	opts := []otlptracegrpc.Option{
 		otlptracegrpc.WithEndpoint(cfg.OTELExporterEndpoint.Value()),
-		otlptracegrpc.WithInsecure(),
-	)
+		otlptracegrpc.WithDialOption(ipv4Dialer()),
+	}
+	// cfg.OTELExporterInsecure defaults to true for sidecar / local
+	// collectors. Set to false (and supply a TLS-fronted endpoint such
+	// as cloudtrace.googleapis.com:443) when exporting directly to
+	// Google's public API.
+	if cfg.OTELExporterInsecure.Value() {
+		opts = append(opts, otlptracegrpc.WithInsecure())
+	}
+	exp, err := otlptracegrpc.New(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -130,10 +168,14 @@ func buildTracerProvider(ctx context.Context, res *resource.Resource) (*sdktrace
 // buildMeterProvider builds a MeterProvider backed by an OTLP/gRPC periodic
 // reader. The default export interval is the SDK default (60s).
 func buildMeterProvider(ctx context.Context, res *resource.Resource) (*otelprom.MeterProvider, error) {
-	exp, err := otlpmetricgrpc.New(ctx,
+	opts := []otlpmetricgrpc.Option{
 		otlpmetricgrpc.WithEndpoint(cfg.OTELExporterEndpoint.Value()),
-		otlpmetricgrpc.WithInsecure(),
-	)
+		otlpmetricgrpc.WithDialOption(ipv4Dialer()),
+	}
+	if cfg.OTELExporterInsecure.Value() {
+		opts = append(opts, otlpmetricgrpc.WithInsecure())
+	}
+	exp, err := otlpmetricgrpc.New(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}

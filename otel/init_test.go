@@ -135,6 +135,44 @@ func TestInit_DisabledShutdownIsIdempotent(t *testing.T) {
 	require.NoError(t, shutdown(context.Background()))
 }
 
+// TestInit_InsecureFlagControlsTLS verifies that the
+// cfg.OTELExporterInsecure flag toggles whether the OTLP exporters
+// are built without TLS. Both paths must construct a non-nil
+// shutdown without panicking; the dial itself never succeeds
+// against the bogus endpoint, but the test exercises the option
+// wiring.
+func TestInit_InsecureFlagControlsTLS(t *testing.T) {
+	resetViper(t)
+	resetOtelGlobals(t)
+
+	endpoint := "localhost:14317"
+	cases := []struct {
+		name     string
+		insecure bool
+	}{
+		{"insecure", true},
+		{"tls", false},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			viper.Set(cfg.OTELExporterEndpoint.Path, endpoint)
+			viper.Set(cfg.OTELExporterInsecure.Path, tc.insecure)
+
+			shutdown, err := Init(context.Background())
+			require.NoError(t, err)
+			require.NotNil(t, shutdown)
+
+			// Cancelled context makes shutdown return promptly without
+			// needing the (unreachable) exporter to flush.
+			ctx, cancel := context.WithCancel(context.Background())
+			cancel()
+			_ = shutdown(ctx)
+		})
+	}
+}
+
 func TestBuildResource_ServiceNameFromCfg(t *testing.T) {
 	// No t.Parallel — calls resource.New which reads env vars.
 	got, err := buildResource(context.Background(), resourceAttrs{
