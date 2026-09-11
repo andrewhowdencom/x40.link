@@ -117,35 +117,37 @@ account key file is required inside the container.
 
 The `otel.exporter.endpoint` flag (and the `OTEL_EXPORTER_OTLP_ENDPOINT`
 env var, which takes precedence) controls where the OTLP/gRPC exporter
-sends data. Two patterns are supported:
+sends data. The standard OTel `OTEL_EXPORTER_OTLP_ENDPOINT` env var
+takes precedence over the flag. Two patterns are supported:
 
-**Sidecar collector (default)** — The OTel Collector runs as a
+**Direct export to Cloud Trace (default)** — The application dials
+`cloudtrace.googleapis.com:443` with TLS. This is the standard
+out-of-the-box configuration and is what the flags default to. The
+service account above carries the IAM roles; the OTel exporter uses
+Application Default Credentials via the Cloud Run metadata server.
+
+* Endpoint: `cloudtrace.googleapis.com:443` (the default)
+* `--otel.exporter.insecure` (default `false`) — TLS
+
+**Sidecar collector** — The OTel Collector runs as a
 [Cloud Run sidecar container](https://cloud.google.com/run/docs/deploying#sidecars)
-on the same instance as `x40.link`, listening on `localhost:4317`.
-The sidecar forwards to Google Cloud Trace and Cloud Monitoring over
-Google's internal network with TLS, terminating the OTLP/gRPC
-connection from the application side.
+on the same instance as `x40.link`, listening on `localhost:4317`
+over plaintext. The sidecar forwards to Google Cloud Trace and
+Cloud Monitoring over Google's internal network with TLS.
 
-* Endpoint: `localhost:4317` (the default)
-* `--otel.exporter.insecure` (default `true`) — loopback only
-* IAM roles on the sidecar's service account (if applicable):
-  `roles/cloudtrace.agent`, `roles/monitoring.metricWriter`
+* Endpoint: `localhost:4317`
+* `--otel.exporter.insecure=true` (opt-in to plaintext on loopback)
+* Set both via the OTel env vars for clarity:
 
-**Direct export to Cloud Trace** — The application exports OTLP/gRPC
-directly to the public Google Cloud Trace API.
+  ```
+  OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
+  OTEL_EXPORTER_INSECURE=true
+  ```
 
-* Endpoint: `cloudtrace.googleapis.com:443` (note port `:443`, not
-  `:4317`)
-* `--otel.exporter.insecure=false` (and the standard OTel env var
-  `OTEL_EXPORTER_OTLP_ENDPOINT=cloudtrace.googleapis.com:443`)
-* IAM roles on the Cloud Run service account: `roles/cloudtrace.agent`,
-  `roles/monitoring.metricWriter`
-
-This pattern is unusual for OTLP/gRPC because Google's public API
-is typically reached via the sidecar collector pattern above. The
-direct path is here for completeness; for production, prefer the
-sidecar because it lets the collector handle batching, retries,
-and queueing if Google's API has a transient outage.
+The sidecar pattern is recommended for high-volume workloads: it
+provides buffering, retries, and queueing between the application
+and Google's API, and lets you swap out the backend (e.g., ship to
+a non-Google destination) without re-deploying the application.
 
 #### IPv4-only dialing
 

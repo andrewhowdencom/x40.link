@@ -66,19 +66,34 @@ and on the collector's debug output.
 
 ## What the default endpoint is for
 
-The default `--otel.exporter.endpoint` is `localhost:4317`. This
-matches the [Cloud Run sidecar pattern](https://cloud.google.com/run/docs/deploying#sidecars),
-where the OpenTelemetry Collector runs as a sidecar container on
-the same instance as `x40.link` and listens on the loopback
-interface. The application talks to it in plaintext; the sidecar
-forwards to Google Cloud Trace and Cloud Monitoring with TLS over
-Google's internal network.
+The default `--otel.exporter.endpoint` is `cloudtrace.googleapis.com:443`
+with TLS — i.e., out of the box the application exports directly to
+Cloud Trace. This is the standard direct-export configuration and
+works once the Cloud Run service account has the relevant IAM roles
+(`roles/cloudtrace.agent`, `roles/monitoring.metricWriter`).
 
-If you want to export directly to Cloud Trace instead of via a
-sidecar, set `--otel.exporter.endpoint=cloudtrace.googleapis.com:443`
-and `--otel.exporter.insecure=false`. The endpoint must be `:443`
-(Google's public API runs TLS on the standard HTTPS port) and
-`insecure=false` so the OTLP exporter performs the TLS handshake.
+If you're running locally without a Cloud Run metadata server, you
+have two options:
+
+* **Point at a local OTel collector** (the easiest dev path). Run
+  `otelcol` locally on `localhost:4317` with the collector config
+  below, then start the server with:
+  ```bash
+  ./x40.link serve \
+      --otel.exporter.endpoint=localhost:4317 \
+      --otel.exporter.insecure=true \
+      --storage.boltdb.file /tmp/x40.link.db
+  ```
+  The `--otel.exporter.insecure=true` flag is required because
+  localhost loopback traffic doesn't need TLS, and the OTel
+  collector typically listens in plaintext on the loopback.
+
+* **Bypass the exporter entirely.** Use `--otel.enabled=false` to
+  skip all observability work while debugging.
+
+The sidecar collector pattern (Cloud Run sidecar listening on
+`localhost:4317`) uses the same flags as the local-collector dev
+path: endpoint `localhost:4317`, insecure `true`.
 
 ## What you should see
 
