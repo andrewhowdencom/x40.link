@@ -61,3 +61,12 @@ jobs:
 
     - name: "Lint"
       uses: golangci/golangci-lint-action@v3
+      with:
+        # Pin a version that supports Go 1.25 targets. golangci-lint
+        # v1.64.x refuses to lint a project with go.mod `go 1.25.0` or
+        # higher because v1.64 was built with Go 1.24 ("the Go language
+        # version used to build golangci-lint is lower than the targeted
+        # Go version"). v1.65 raised the toolchain. Setting the version
+        # explicitly avoids the upstream default flipping back to a too-
+        # old binary in the future.
+        version: v1.65.0
