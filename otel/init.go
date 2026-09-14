@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/compute/metadata"
 	"github.com/andrewhowdencom/x40.link/cfg"
 	"github.com/andrewhowdencom/x40.link/version"
 	"go.opentelemetry.io/contrib/detectors/gcp"
@@ -354,6 +355,16 @@ func buildResource(ctx context.Context, in resourceAttrs) (*resource.Resource, e
 	if in.service != "" {
 		attrs = append(attrs, attribute.String("cloud.run.service", in.service))
 	}
+	// The Google Telemetry API rejects resources that don't carry a
+	// `gcp.project_id`. The OTel `gcp` resource detector sets
+	// `cloud.account.id` (the OTel semconv name) but not the Google-
+	// specific name, so we add it directly. Only on Cloud Run — the
+	// metadata server is GCP-specific.
+	if os.Getenv("K_SERVICE") != "" {
+		if projectID := queryCloudRunProjectID(ctx); projectID != "" {
+			attrs = append(attrs, attribute.String("gcp.project_id", projectID))
+		}
+	}
 	attrs = append(attrs, parseResourceAttributes(in.resourceAttributes)...)
 
 	merged, err := resource.Merge(auto, resource.NewSchemaless(attrs...))
@@ -397,4 +408,46 @@ func parseResourceAttributes(in string) []attribute.KeyValue {
 	}
 
 	return out
+}
+
+// queryCloudRunProjectID returns the GCP project ID from the Cloud Run
+// metadata server. The OTel GCP resource detector emits the project ID
+// under the OTel-semconv name `cloud.account.id`, but the Google
+// Telemetry API specifically requires `gcp.project_id`. We call the
+// metadata server ourselves to populate the latter attribute without
+// depending on the detector's internal attribute choices.
+//
+// Returns an empty string if not on GCE or the call fails. The caller
+// skips the gcp.project_id attribute in that case, and the resource
+// will be rejected by the Google Telemetry API — which is the right
+// behaviour in production (the deployment should fail loudly if the
+// project ID can't be determined).
+func queryCloudRunProjectID(ctx context.Context) string {
+	if !metadata.OnGCE() {
+		return ""
+	}
+
+	// The metadata package has its own client with a default 2s
+	// timeout; the caller has already provided ctx (from Init), but
+	// the metadata package doesn't honour it. Bound it ourselves so
+	// this doesn't slow startup on a broken metadata server.
+	pidCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	type result struct {
+		id string
+	}
+	resCh := make(chan result, 1)
+	go func() {
+		// metadata.ProjectID uses a default client; the metadata
+		// server on Cloud Run always has the project ID.
+		id, _ := metadata.ProjectID()
+		resCh <- result{id: id}
+	}()
+	select {
+	case <-pidCtx.Done():
+		return ""
+	case r := <-resCh:
+		return r.id
+	}
 }
