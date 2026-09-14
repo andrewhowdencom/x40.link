@@ -72,4 +72,4 @@ jobs:
         # maintained line and accepts the newer targets. Pinning
         # explicitly avoids the upstream default flipping back to a
         # too-old binary in the future.
-        version: v2.0.0
+        version: v2.13.2
