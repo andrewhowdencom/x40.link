@@ -79,3 +79,8 @@ func TestInitTelemetry_EnabledDoesNotPanic(t *testing.T) {
 	defer cancel()
 	_ = shutdown(ctx)
 }
+
+func TestServeRegistersTelemetryTransportFlags(t *testing.T) {
+	require.NotNil(t, serveCmd.Flags().Lookup(cfg.OTELExporterInsecure.Path))
+	require.NotNil(t, serveCmd.Flags().Lookup(cfg.OTELProbeEndpoint.Path))
+}

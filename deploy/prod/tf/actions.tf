@@ -49,9 +49,9 @@ resource "google_service_account_iam_member" "x40-link__github-actions" {
   member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github__production.name}/attribute.repository/andrewhowdencom/x40.link"
 }
 
-# Allow the general compute user to assume service accounts.
+# Allow the deploy workflow to attach the runtime identity to Cloud Run.
 resource "google_service_account_iam_binding" "x40-link__github-actions" {
-  service_account_id = "${data.google_project.project.id}/serviceAccounts/${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  service_account_id = google_service_account.x40-link__runtime.name
   role               = "roles/iam.serviceAccountUser"
 
   members = [
