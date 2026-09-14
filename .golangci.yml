@@ -1,10 +1,15 @@
+---
+# golangci-lint v2 requires the `version: "2"` schema marker.
+version: "2"
+
 linters:
   enable:
     - revive
 
-issues:
-  exclude-use-default: false
+# `issues.exclude-use-default` was removed in golangci-lint v2 (always
+# false now), so it's dropped here.
 
+issues:
   exclude-rules:
     # Here, we're explicitly allowing unexported types. This is a common type where we definitely do not want people
     # extending or embedding the interface, such as test types.
