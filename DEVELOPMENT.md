@@ -92,11 +92,11 @@ the server starts listening. The OTel SDK is configured via the existing
 
 ### Local development
 
-The default OTLP endpoint is `cloudtrace.googleapis.com:4317`. To send
+The default OTLP endpoint is `telemetry.googleapis.com:443`. To send
 data to a local collector instead, set the standard OTel env var:
 
 ```bash
-OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317 ./x40.link serve \
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 ./x40.link serve \
     --storage.boltdb.file /tmp/x40.link.db
 ```
 
@@ -110,8 +110,10 @@ The Cloud Run service account needs these IAM roles:
   Telemetry API (which feeds Cloud Trace).
 * `roles/monitoring.metricWriter` — write metrics to Cloud
   Monitoring.
+* `roles/serviceusage.serviceUsageConsumer` — consume the Telemetry
+  API in the project.
 
-Both of these are needed because the OTel SDK's OTLP exporter
+These are needed because the OTel SDK's OTLP exporter
 targets the unified **Google Telemetry API** at
 `telemetry.googleapis.com:443` (not the legacy Cloud Trace v2
 endpoint at `cloudtrace.googleapis.com`, which only speaks the
@@ -128,10 +130,18 @@ happens until the first export attempt.
 
 The `gcp.NewDetector()` resource detector automatically populates
 Cloud Run-specific attributes (project, region, service revision)
-on the OTel Resource. The detector only runs when the `K_SERVICE`
-env var is set, which is the standard Cloud Run signal — on
-developer machines and in unit tests the detector is skipped so
-the metadata-server ping doesn't slow startup.
+on the OTel Resource. The application also copies the detector's
+`cloud.account.id` value to `gcp.project_id`, which the Google
+Telemetry API requires. The detector only runs when the `K_SERVICE`
+env var is set, which is the standard Cloud Run signal.
+
+Terraform enables `telemetry.googleapis.com`,
+`cloudtrace.googleapis.com`, `monitoring.googleapis.com`, and
+`logging.googleapis.com`. It provisions the dedicated
+`x40-link-runtime` service account and grants the telemetry roles above,
+plus `roles/datastore.user` for Firestore. Apply the production
+Terraform before deploying the Cloud Run manifest, because the manifest
+references that service account.
 
 #### Deployment patterns
 
@@ -158,9 +168,12 @@ with TLS over Google's internal network. Set both via the OTel
 env vars:
 
 ```
-OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317
-OTEL_EXPORTER_INSECURE=true
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317
 ```
+
+The `http` scheme selects plaintext transport. The equivalent flags are
+`--otel.exporter.endpoint=localhost:4317` and
+`--otel.exporter.insecure=true`.
 
 The sidecar pattern is recommended for high-volume workloads: it
 provides buffering, retries, and queueing between the application

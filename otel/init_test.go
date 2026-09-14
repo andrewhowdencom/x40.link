@@ -16,6 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
 // otelEnv holds the OTel-related viper keys for a single test. Each test
@@ -299,6 +301,68 @@ func TestParseResourceAttributes(t *testing.T) {
 		got := parseResourceAttributes("good=1,bad,also-good=2")
 		require.Len(t, got, 2)
 	})
+}
+
+func TestResolveOTLPEndpoint(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		name       string
+		raw        string
+		insecure   bool
+		wantTarget string
+		wantHost   string
+		wantURL    bool
+		wantPlain  bool
+	}{
+		{
+			name:       "flag host and port",
+			raw:        "telemetry.googleapis.com:443",
+			wantTarget: "telemetry.googleapis.com:443",
+			wantHost:   "telemetry.googleapis.com",
+		},
+		{
+			name:       "standard HTTPS URL",
+			raw:        "https://telemetry.googleapis.com",
+			wantTarget: "telemetry.googleapis.com:443",
+			wantHost:   "telemetry.googleapis.com",
+			wantURL:    true,
+		},
+		{
+			name:       "standard HTTP URL",
+			raw:        "http://localhost:4317",
+			wantTarget: "localhost:4317",
+			wantHost:   "localhost",
+			wantURL:    true,
+			wantPlain:  true,
+		},
+		{
+			name:       "explicit plaintext flag",
+			raw:        "localhost:4317",
+			insecure:   true,
+			wantTarget: "localhost:4317",
+			wantHost:   "localhost",
+			wantPlain:  true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := resolveOTLPEndpoint(tc.raw, tc.insecure)
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantTarget, got.target)
+			assert.Equal(t, tc.wantHost, got.hostname)
+			assert.Equal(t, tc.wantURL, got.fromURL)
+			assert.Equal(t, tc.wantPlain, got.insecure)
+		})
+	}
+}
+
+func TestGCPProjectID(t *testing.T) {
+	t.Parallel()
+
+	detected := resource.NewSchemaless(semconv.CloudAccountID("example-project"))
+	assert.Equal(t, "example-project", gcpProjectID(detected))
 }
 
 // TestVersion_DefaultValue pins the default for the build-time

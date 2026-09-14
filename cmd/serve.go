@@ -80,6 +80,8 @@ func init() {
 		// OpenTelemetry
 		cfg.OTELEnabled,
 		cfg.OTELExporterEndpoint,
+		cfg.OTELExporterInsecure,
+		cfg.OTELProbeEndpoint,
 		cfg.OTELServiceName,
 		cfg.OTELResourceAttributes,
 	} {

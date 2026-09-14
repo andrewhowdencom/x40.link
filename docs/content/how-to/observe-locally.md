@@ -5,7 +5,7 @@ inbound request, every storage operation, and the Go runtime.
 The data is exported via OTLP/gRPC to the endpoint configured by
 the standard `OTEL_EXPORTER_OTLP_ENDPOINT` env var (or the
 `--otel.exporter.endpoint` flag, which defaults to
-`cloudtrace.googleapis.com:4317`).
+`telemetry.googleapis.com:443`).
 
 This guide shows how to route the data to a local collector for
 development.
@@ -57,7 +57,7 @@ otelcol --config otel-collector-config.yaml
 ## Run the server pointed at the local collector
 
 ```bash
-OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317 \
+OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317 \
     ./x40.link serve --storage.boltdb.file /tmp/x40.link.db
 ```
 
@@ -100,7 +100,9 @@ have two options:
 
 The sidecar collector pattern (Cloud Run sidecar listening on
 `localhost:4317`) uses the same flags as the local-collector dev
-path: endpoint `localhost:4317`, insecure `true`.
+path. With environment configuration, use the standard URL form
+`OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4317`; the `http`
+scheme selects plaintext transport.
 
 ## What you should see
 

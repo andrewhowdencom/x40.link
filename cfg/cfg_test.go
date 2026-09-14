@@ -113,3 +113,37 @@ func TestFlagToConfiguration(t *testing.T) {
 	assert.Equal(t, "bar", viper.GetString(v.Path))
 
 }
+
+func TestEnvironmentOverridesFlag(t *testing.T) {
+	t.Run("string", func(t *testing.T) {
+		viper.Reset()
+		t.Cleanup(viper.Reset)
+
+		v := &String{V: V{
+			Path:    "example.path",
+			Env:     "X40_TEST_STRING",
+			Default: "default",
+			mu:      &sync.Mutex{},
+		}}
+		viper.Set(v.Path, "flag")
+		t.Setenv(v.Env, "environment")
+
+		assert.Equal(t, "environment", v.Value())
+	})
+
+	t.Run("bool", func(t *testing.T) {
+		viper.Reset()
+		t.Cleanup(viper.Reset)
+
+		v := &Bool{V: V{
+			Path:    "example.enabled",
+			Env:     "X40_TEST_BOOL",
+			Default: false,
+			mu:      &sync.Mutex{},
+		}}
+		viper.Set(v.Path, false)
+		t.Setenv(v.Env, "true")
+
+		assert.True(t, v.Value())
+	})
+}

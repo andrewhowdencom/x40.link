@@ -3,6 +3,8 @@ package cfg
 
 import (
 	"errors"
+	"os"
+	"strconv"
 	"sync"
 
 	"github.com/spf13/pflag"
@@ -13,6 +15,9 @@ import (
 type V struct {
 	// Path is the json notation path that this configuration is available at
 	Path string
+
+	// Env is an optional environment variable that overrides the flag.
+	Env string
 
 	// Usage is the (max 72 character) Usage for a given configuration item
 	Usage string
@@ -34,6 +39,13 @@ type Bool struct {
 
 // Value returns the value of the configuration
 func (b *Bool) Value() bool {
+	if b.Env != "" {
+		if raw, ok := os.LookupEnv(b.Env); ok {
+			if value, err := strconv.ParseBool(raw); err == nil {
+				return value
+			}
+		}
+	}
 	if !viper.IsSet(b.Path) {
 		return b.Default.(bool)
 	}
@@ -48,6 +60,11 @@ type String struct {
 
 // Value returns the value of the configuration
 func (s String) Value() string {
+	if s.Env != "" {
+		if value, ok := os.LookupEnv(s.Env); ok && value != "" {
+			return value
+		}
+	}
 	if !viper.IsSet(s.Path) {
 		return s.Default.(string)
 	}
@@ -114,9 +131,9 @@ var (
 	// telemetry.googleapis.com:443, which requires per-RPC OAuth via
 	// Application Default Credentials. See DEVELOPMENT.md for the IAM
 	// roles and credential setup.
-	OTELEnabled = &Bool{V: V{Path: "otel.enabled", Default: true, Usage: "Emit OpenTelemetry traces and metrics from the server", mu: &sync.Mutex{}}}
-	OTELExporterEndpoint = &String{V: V{Path: "otel.exporter.endpoint", Default: "telemetry.googleapis.com:443", Usage: "OTLP/gRPC endpoint for traces and metrics. Default is the Google Telemetry API (which accepts OTLP); override with localhost:4317 (and --otel.exporter.insecure=true) for the Cloud Run sidecar collector pattern or a local collector", mu: &sync.Mutex{}}}
-	OTELExporterInsecure = &Bool{V: V{Path: "otel.exporter.insecure", Default: false, Usage: "Disable TLS on the OTLP/gRPC connection. Leave false (the default) for Google Telemetry API; set to true with --otel.exporter.endpoint=localhost:4317 for the sidecar collector or local collector patterns", mu: &sync.Mutex{}}}
+	OTELEnabled          = &Bool{V: V{Path: "otel.enabled", Default: true, Usage: "Emit OpenTelemetry traces and metrics from the server", mu: &sync.Mutex{}}}
+	OTELExporterEndpoint = &String{V: V{Path: "otel.exporter.endpoint", Env: "OTEL_EXPORTER_OTLP_ENDPOINT", Default: "telemetry.googleapis.com:443", Usage: "OTLP/gRPC endpoint for traces and metrics. Default is the Google Telemetry API (which accepts OTLP); override with localhost:4317 (and --otel.exporter.insecure=true) for the Cloud Run sidecar collector pattern or a local collector", mu: &sync.Mutex{}}}
+	OTELExporterInsecure = &Bool{V: V{Path: "otel.exporter.insecure", Env: "OTEL_EXPORTER_OTLP_INSECURE", Default: false, Usage: "Disable TLS on the OTLP/gRPC connection. Leave false (the default) for Google Telemetry API; set to true with --otel.exporter.endpoint=localhost:4317 for the sidecar collector or local collector patterns", mu: &sync.Mutex{}}}
 	// OTELProbeEndpoint, when true (default), verifies that the
 	// configured OTLP endpoint is reachable before Init returns. A
 	// misconfigured endpoint — no collector listening, IPv6 timeout,
@@ -125,9 +142,9 @@ var (
 	// false to skip the probe (e.g., in environments where the
 	// endpoint is reached via proxy or DNS is not yet available at
 	// process start).
-	OTELProbeEndpoint = &Bool{V: V{Path: "otel.probe-endpoint", Default: true, Usage: "Verify the OTLP endpoint is reachable at startup. Disable if you intentionally run without a collector or rely on deferred connection", mu: &sync.Mutex{}}}
-	OTELServiceName      = &String{V: V{Path: "otel.service.name", Default: "x40.link", Usage: "service.name resource attribute", mu: &sync.Mutex{}}}
-	OTELResourceAttributes = &String{V: V{Path: "otel.resource.attributes", Default: "", Usage: "Comma-separated key=value resource attributes", mu: &sync.Mutex{}}}
+	OTELProbeEndpoint      = &Bool{V: V{Path: "otel.probe-endpoint", Default: true, Usage: "Verify the OTLP endpoint is reachable at startup. Disable if you intentionally run without a collector or rely on deferred connection", mu: &sync.Mutex{}}}
+	OTELServiceName        = &String{V: V{Path: "otel.service.name", Env: "OTEL_SERVICE_NAME", Default: "x40.link", Usage: "service.name resource attribute", mu: &sync.Mutex{}}}
+	OTELResourceAttributes = &String{V: V{Path: "otel.resource.attributes", Env: "OTEL_RESOURCE_ATTRIBUTES", Default: "", Usage: "Comma-separated key=value resource attributes", mu: &sync.Mutex{}}}
 )
 
 // AddFlagTo accepts a flag set, and adds the flag to it. It also binds that flag to the Viper configuration.

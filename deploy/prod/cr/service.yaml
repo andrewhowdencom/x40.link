@@ -15,6 +15,7 @@ spec:
       annotations:
         autoscaling.knative.dev/maxScale: '3'
     spec:
+      serviceAccountName: x40-link-runtime@andrewhowdencom.iam.gserviceaccount.com
       containerConcurrency: 1000
       timeoutSeconds: 1
       containers:
