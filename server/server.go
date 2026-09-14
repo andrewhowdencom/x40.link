@@ -12,7 +12,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	//nolint:staticcheck // SA1019: golang.org/x/net/http2/h2c is deprecated.
+	// Migrate to http.Server.Protocols = []http.Protocol{"h2c"} (Go 1.24+)
+	// once chi's h2c helper supports it; tracked as a follow-up.
 	"golang.org/x/net/http2"
+	//nolint:staticcheck // SA1019: golang.org/x/net/http2/h2c is deprecated.
+	// Same as above.
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 )
