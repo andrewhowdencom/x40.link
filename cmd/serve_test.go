@@ -63,6 +63,10 @@ func TestInitTelemetry_EnabledDoesNotPanic(t *testing.T) {
 	viper.Set(cfg.OTELEnabled.Path, true)
 	viper.Set(cfg.OTELExporterEndpoint.Path, endpoint)
 	viper.Set(cfg.OTELServiceName.Path, "x40.link-test")
+	// The probe runs against a non-existent port — disable it so the
+	// test doesn't sit on a 3-second timeout that's unrelated to
+	// what we're trying to verify (that construction succeeds).
+	viper.Set(cfg.OTELProbeEndpoint.Path, false)
 
 	shutdown, err := initTelemetry(context.Background())
 	require.NoError(t, err)

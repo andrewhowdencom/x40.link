@@ -12,7 +12,12 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	//nolint:staticcheck // SA1019: golang.org/x/net/http2/h2c is deprecated.
+	// Migrate to http.Server.Protocols = []http.Protocol{"h2c"} (Go 1.24+)
+	// once chi's h2c helper supports it; tracked as a follow-up.
 	"golang.org/x/net/http2"
+	//nolint:staticcheck // SA1019: golang.org/x/net/http2/h2c is deprecated.
+	// Same as above.
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 )
@@ -118,11 +123,11 @@ func WithStorage(str storage.Storer, name string) Option {
 func WithH2C() Option {
 	return func(srv *http.Server) error {
 		mux := srv.Handler.(*chi.Mux)
-		mux.Use(Intercept(IsH2C, h2c.NewHandler(
+		mux.Use(Intercept(IsH2C, h2c.NewHandler( //nolint:staticcheck // SA1019: h2c.NewHandler is deprecated; migrate to http.Server.Protocols.
 			mux,
 
 			// The relevant HTTP/2 server to upgrade and hanadle connections on.
-			&http2.Server{},
+			&http2.Server{}, //nolint:staticcheck // SA1019: h2c.Server is deprecated.
 		)))
 
 		return nil

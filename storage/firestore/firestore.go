@@ -131,7 +131,7 @@ func urlToPath(url *url.URL) string {
 	p := []string{FirestoreCollection, url.Host}
 
 	if url.Path != "" {
-		p = append(p, "id", strings.Replace(url.Path, "/", "+", -1))
+		p = append(p, "id", strings.ReplaceAll(url.Path, "/", "+"))
 	}
 
 	return path.Join(p...)

@@ -106,14 +106,26 @@ var (
 	// pipeline. The OTel SDK also reads standard env vars (e.g.
 	// OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_SERVICE_NAME), which take precedence
 	// over these flags at runtime.
+	//
+	// IMPORTANT: cloudtrace.googleapis.com does NOT accept OTLP/gRPC.
+	// Cloud Trace v2 has its own protobuf-based gRPC API
+	// (google.devtools.cloudtrace.v2), not OTLP. The OTLP exporter can
+	// only target the unified Google Telemetry API at
+	// telemetry.googleapis.com:443, which requires per-RPC OAuth via
+	// Application Default Credentials. See DEVELOPMENT.md for the IAM
+	// roles and credential setup.
 	OTELEnabled = &Bool{V: V{Path: "otel.enabled", Default: true, Usage: "Emit OpenTelemetry traces and metrics from the server", mu: &sync.Mutex{}}}
-	// Default endpoint is Google's public Cloud Trace OTLP/gRPC endpoint
-	// on :443 with TLS. This is the standard direct-export configuration.
-	// Operators using the sidecar collector pattern (Cloud Run sidecar
-	// or local collector) override this with --otel.exporter.endpoint and
-	// --otel.exporter.insecure.
-	OTELExporterEndpoint = &String{V: V{Path: "otel.exporter.endpoint", Default: "cloudtrace.googleapis.com:443", Usage: "OTLP/gRPC endpoint for traces and metrics. Defaults to direct export to Cloud Trace; set to localhost:4317 (with --otel.exporter.insecure=true) for the Cloud Run sidecar collector pattern or local development", mu: &sync.Mutex{}}}
-	OTELExporterInsecure = &Bool{V: V{Path: "otel.exporter.insecure", Default: false, Usage: "Disable TLS on the OTLP/gRPC connection. Leave false (the default) for direct Cloud Trace export; set to true with --otel.exporter.endpoint=localhost:4317 for the sidecar collector or local collector patterns", mu: &sync.Mutex{}}}
+	OTELExporterEndpoint = &String{V: V{Path: "otel.exporter.endpoint", Default: "telemetry.googleapis.com:443", Usage: "OTLP/gRPC endpoint for traces and metrics. Default is the Google Telemetry API (which accepts OTLP); override with localhost:4317 (and --otel.exporter.insecure=true) for the Cloud Run sidecar collector pattern or a local collector", mu: &sync.Mutex{}}}
+	OTELExporterInsecure = &Bool{V: V{Path: "otel.exporter.insecure", Default: false, Usage: "Disable TLS on the OTLP/gRPC connection. Leave false (the default) for Google Telemetry API; set to true with --otel.exporter.endpoint=localhost:4317 for the sidecar collector or local collector patterns", mu: &sync.Mutex{}}}
+	// OTELProbeEndpoint, when true (default), verifies that the
+	// configured OTLP endpoint is reachable before Init returns. A
+	// misconfigured endpoint — no collector listening, IPv6 timeout,
+	// DNS failure, TLS handshake failure — fails the server's startup
+	// instead of silently dropping all traces and metrics. Set to
+	// false to skip the probe (e.g., in environments where the
+	// endpoint is reached via proxy or DNS is not yet available at
+	// process start).
+	OTELProbeEndpoint = &Bool{V: V{Path: "otel.probe-endpoint", Default: true, Usage: "Verify the OTLP endpoint is reachable at startup. Disable if you intentionally run without a collector or rely on deferred connection", mu: &sync.Mutex{}}}
 	OTELServiceName      = &String{V: V{Path: "otel.service.name", Default: "x40.link", Usage: "service.name resource attribute", mu: &sync.Mutex{}}}
 	OTELResourceAttributes = &String{V: V{Path: "otel.resource.attributes", Default: "", Usage: "Comma-separated key=value resource attributes", mu: &sync.Mutex{}}}
 )
