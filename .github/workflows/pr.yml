@@ -60,7 +60,7 @@ jobs:
       run: task test
 
     - name: "Lint"
-      uses: golangci/golangci-lint-action@v3
+      uses: golangci/golangci-lint-action@v9
       with:
         # Pin a version that supports Go 1.25 targets. golangci-lint
         # v1.64.x (the previous "latest" used by the action) refuses
