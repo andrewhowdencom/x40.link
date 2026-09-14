@@ -123,11 +123,11 @@ func WithStorage(str storage.Storer, name string) Option {
 func WithH2C() Option {
 	return func(srv *http.Server) error {
 		mux := srv.Handler.(*chi.Mux)
-		mux.Use(Intercept(IsH2C, h2c.NewHandler(
+		mux.Use(Intercept(IsH2C, h2c.NewHandler( //nolint:staticcheck // SA1019: h2c.NewHandler is deprecated; migrate to http.Server.Protocols.
 			mux,
 
 			// The relevant HTTP/2 server to upgrade and hanadle connections on.
-			&http2.Server{},
+			&http2.Server{}, //nolint:staticcheck // SA1019: h2c.Server is deprecated.
 		)))
 
 		return nil
