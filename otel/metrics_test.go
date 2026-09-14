@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 )
 
 // withManualMeter swaps in a MeterProvider backed by a manual reader so
@@ -22,7 +21,7 @@ func withManualMeter(t *testing.T) *metric.ManualReader {
 
 	prev := otel.GetMeterProvider()
 	reader := metric.NewManualReader()
-	otel.SetMeterProvider(sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader)))
+	otel.SetMeterProvider(metric.NewMeterProvider(metric.WithReader(reader)))
 	t.Cleanup(func() { otel.SetMeterProvider(prev) })
 
 	return reader

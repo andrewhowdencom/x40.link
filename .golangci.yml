@@ -6,10 +6,16 @@ linters:
   enable:
     - revive
 
-# `issues.exclude-rules` and `issues.exclude-use-default` were removed in
-# golangci-lint v2. Per-linter rules (including excludes) now live under
-# `linters.settings.<linter-name>`; see
-# https://golangci-lint.run/product/migration-guide/ for the new schema.
-# The previous config excluded `revive: returns unexported type`; that
-# warning is rare on this codebase and we'll re-add a v2-form exclude if
-# it surfaces.
+  # Disable a specific revive rule. v2 removed text-based
+  # `issues.exclude-rules` in favor of per-linter, per-rule
+  # configuration under `linters.settings.<name>.rules`.
+  settings:
+    revive:
+      rules:
+        - name: unexported-return
+          # Common in this codebase: exported constructors returning
+          # unexported types (test fixtures, package-private helpers
+          # like cli/auth/per_rpc_creds.go, storage/test, storage/yaml).
+          # The maintainers accept this idiom; revive's default rule
+          # would otherwise flag it as an "annoying to use" lint.
+          disabled: true
