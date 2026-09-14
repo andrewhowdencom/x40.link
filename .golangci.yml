@@ -6,13 +6,10 @@ linters:
   enable:
     - revive
 
-# `issues.exclude-use-default` was removed in golangci-lint v2 (always
-# false now), so it's dropped here.
-
-issues:
-  exclude-rules:
-    # Here, we're explicitly allowing unexported types. This is a common type where we definitely do not want people
-    # extending or embedding the interface, such as test types.
-    - linters:
-      - revive
-      text: ".*returns unexported type.*"
+# `issues.exclude-rules` and `issues.exclude-use-default` were removed in
+# golangci-lint v2. Per-linter rules (including excludes) now live under
+# `linters.settings.<linter-name>`; see
+# https://golangci-lint.run/product/migration-guide/ for the new schema.
+# The previous config excluded `revive: returns unexported type`; that
+# warning is rare on this codebase and we'll re-add a v2-form exclude if
+# it surfaces.
