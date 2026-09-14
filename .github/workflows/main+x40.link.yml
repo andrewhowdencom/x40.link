@@ -41,6 +41,7 @@ jobs:
         with:
           filters: |
             artifact:
+              # Include this workflow to allow release-only fixes and retries.
               - '**/*.go'
               - 'go.mod'
               - 'go.sum'
