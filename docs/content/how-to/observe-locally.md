@@ -107,10 +107,16 @@ scheme selects plaintext transport.
 ## What you should see
 
 * **Span names** are business-operation names — `create_link`,
-  `resolve_link`, `redirect`, `storage.lookup`, `storage.write` —
-  not the underlying gRPC method name or HTTP path. The gRPC and
-  HTTP instrumentation libraries are configured to rename
-  otelhttp/otelgrpc's default span names to match AGENTS.md.
+  `resolve_link`, `redirect`, `reject_request`, `storage.lookup`,
+  `storage.write` — not the underlying gRPC method name or HTTP path. The
+  gRPC and HTTP instrumentation libraries are configured to rename
+  otelhttp/otelgrpc's default span names to match AGENTS.md. HTTP spans also
+  carry `http.route`; unsupported methods use `reject_request` rather than
+  appearing as redirects.
+* **Connection correlation** for HTTP traces is available as
+  `x40.link.server.connection.id`. Requests with the same value shared one
+  process-local TCP connection. This trace-only attribute is useful when
+  diagnosing multiplexed HTTP/2 traffic and is not attached to metrics.
 * **Metric names** are `x40.link.links.created`,
   `x40.link.links.resolved`, `x40.link.links.not_found`, and
   `x40.link.storage.errors`. Each carries a `storage` label

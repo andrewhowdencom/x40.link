@@ -120,6 +120,55 @@ func spanNames(spans []sdktrace.ReadOnlySpan) []string {
 	return out
 }
 
+func spanAttribute(span sdktrace.ReadOnlySpan, key string) (attribute.Value, bool) {
+	for _, attr := range span.Attributes() {
+		if string(attr.Key) == key {
+			return attr.Value, true
+		}
+	}
+
+	return attribute.Value{}, false
+}
+
+func TestMethodNotAllowedSpan(t *testing.T) {
+	rec := withSpanRecorder(t)
+
+	srv, err := server.New(
+		server.WithOtel(),
+		server.WithStorage(test.New(), "hashmap"),
+	)
+	require.NoError(t, err)
+
+	w := httptest.NewRecorder()
+	req, err := http.NewRequest(http.MethodPost, "/foo", nil)
+	require.NoError(t, err)
+	req.Host = "x40.local"
+
+	srv.Handler.ServeHTTP(w, req)
+	require.Equal(t, http.StatusMethodNotAllowed, w.Result().StatusCode)
+
+	var rejected sdktrace.ReadOnlySpan
+	for _, span := range rec.Ended() {
+		if span.Name() == server.SpanNameRejectedRequest {
+			rejected = span
+			break
+		}
+	}
+	require.NotNil(t, rejected, "expected %s span in: %v", server.SpanNameRejectedRequest, spanNames(rec.Ended()))
+
+	route, ok := spanAttribute(rejected, "http.route")
+	require.True(t, ok)
+	assert.Equal(t, "/*", route.AsString())
+
+	method, ok := spanAttribute(rejected, "http.method")
+	require.True(t, ok)
+	assert.Equal(t, http.MethodPost, method.AsString())
+
+	status, ok := spanAttribute(rejected, "http.status_code")
+	require.True(t, ok)
+	assert.Equal(t, int64(http.StatusMethodNotAllowed), status.AsInt64())
+}
+
 // TestRedirectEmitsResolvedMetric exercises the HTTP path and asserts
 // that the resolved-link business counter fires with surface=http.
 func TestRedirectEmitsResolvedMetric(t *testing.T) {
