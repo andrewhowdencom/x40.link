@@ -2,16 +2,21 @@ package server_test
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync"
 	"testing"
 
 	"github.com/andrewhowdencom/x40.link/server"
 	"github.com/andrewhowdencom/x40.link/storage/test"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/net/http2"
 )
 
 func TestNewServer_WithBadOption(t *testing.T) {
@@ -103,4 +108,91 @@ func TestNewServer_WithStorage(t *testing.T) {
 
 	assert.Equal(t, http.StatusTemporaryRedirect, w.Result().StatusCode)
 	assert.Equal(t, "//test/bar", w.Header().Get("Location"))
+}
+
+func TestNewServer_WithH2CConcurrentRequests(t *testing.T) {
+	storage := test.New()
+	require.NoError(t, storage.Put(context.Background(), &url.URL{
+		Host: "test",
+		Path: "/foo",
+	}, &url.URL{
+		Scheme: "https",
+		Host:   "example.com",
+	}))
+
+	srv, err := server.New(
+		server.WithH2C(),
+		server.WithStorage(storage, "hashmap"),
+	)
+	require.NoError(t, err)
+
+	ts := httptest.NewServer(srv.Handler)
+	t.Cleanup(ts.Close)
+
+	transport := &http2.Transport{
+		AllowHTTP: true,
+		DialTLSContext: func(ctx context.Context, network, addr string, _ *tls.Config) (net.Conn, error) {
+			return (&net.Dialer{}).DialContext(ctx, network, addr)
+		},
+	}
+	t.Cleanup(transport.CloseIdleConnections)
+
+	client := &http.Client{
+		Transport: transport,
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	const requests = 256
+	type result struct {
+		status int
+		proto  int
+		allow  []string
+		err    error
+	}
+
+	start := make(chan struct{})
+	results := make(chan result, requests)
+	var wg sync.WaitGroup
+
+	for range requests {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+
+			req, reqErr := http.NewRequestWithContext(context.Background(), http.MethodGet, ts.URL+"/foo", nil)
+			if reqErr != nil {
+				results <- result{err: reqErr}
+				return
+			}
+			req.Host = "test"
+
+			resp, doErr := client.Do(req)
+			if doErr != nil {
+				results <- result{err: doErr}
+				return
+			}
+			closeErr := resp.Body.Close()
+
+			results <- result{
+				status: resp.StatusCode,
+				proto:  resp.ProtoMajor,
+				allow:  resp.Header.Values("Allow"),
+				err:    closeErr,
+			}
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+	close(results)
+
+	for got := range results {
+		require.NoError(t, got.err)
+		assert.Equal(t, 2, got.proto)
+		assert.Equal(t, http.StatusTemporaryRedirect, got.status)
+		assert.Empty(t, got.allow)
+	}
 }

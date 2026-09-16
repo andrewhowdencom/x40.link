@@ -34,7 +34,10 @@ const SpanNameRedirect = "redirect"
 // routes them away from the standard chain before otelhttp sees them.
 func WithOtel() Option {
 	return func(srv *http.Server) error {
-		mux := srv.Handler.(*chi.Mux)
+		mux, err := serverMux(srv)
+		if err != nil {
+			return err
+		}
 
 		mux.Use(otelhttp.NewMiddleware(SpanNameRedirect,
 			otelhttp.WithSpanNameFormatter(func(_ string, _ *http.Request) string {
@@ -84,7 +87,10 @@ func New(opts ...Option) (*http.Server, error) {
 // WithMiddleware appends middleware to the default handler
 func WithMiddleware(m func(next http.Handler) http.Handler) Option {
 	return func(srv *http.Server) error {
-		mux := srv.Handler.(*chi.Mux)
+		mux, err := serverMux(srv)
+		if err != nil {
+			return err
+		}
 		mux.Use(m)
 
 		return nil
@@ -105,7 +111,10 @@ func WithListenAddress(addr string) Option {
 // custom business counters emitted by the redirect handler.
 func WithStorage(str storage.Storer, name string) Option {
 	return func(srv *http.Server) error {
-		mux := srv.Handler.(*chi.Mux)
+		mux, err := serverMux(srv)
+		if err != nil {
+			return err
+		}
 
 		sh := &instrumentedRedirect{
 			inner:   &strHandler{str: str},
@@ -118,26 +127,56 @@ func WithStorage(str storage.Storer, name string) Option {
 	}
 }
 
-// WithH2C allows piping the connection to a HTTP/2 server, which will hijack the request to use the HTTP/2 protocol
-// but over the initially supplied connection.
+// WithH2C wraps the configured handler with an HTTP/2 cleartext server.
+//
+// The H2C handler deliberately sits outside chi. Installing it as chi
+// middleware causes the HTTP/2 connection context to contain chi's
+// request-scoped routing context. Every multiplexed stream then shares
+// that mutable context, producing routing races and spurious responses.
 func WithH2C() Option {
 	return func(srv *http.Server) error {
-		mux := srv.Handler.(*chi.Mux)
-		mux.Use(Intercept(IsH2C, h2c.NewHandler( //nolint:staticcheck // SA1019: h2c.NewHandler is deprecated; migrate to http.Server.Protocols.
-			mux,
+		mux, err := serverMux(srv)
+		if err != nil {
+			return err
+		}
 
-			// The relevant HTTP/2 server to upgrade and hanadle connections on.
-			&http2.Server{}, //nolint:staticcheck // SA1019: h2c.Server is deprecated.
-		)))
+		srv.Handler = &h2cServerHandler{
+			Handler: h2c.NewHandler( //nolint:staticcheck // SA1019: h2c.NewHandler is deprecated; migrate to http.Server.Protocols.
+				mux,
+				&http2.Server{}, //nolint:staticcheck // SA1019: h2c.Server is deprecated.
+			),
+			mux: mux,
+		}
 
 		return nil
+	}
+}
+
+// h2cServerHandler keeps the connection-level H2C handler outside chi
+// while retaining the mux for options applied later.
+type h2cServerHandler struct {
+	http.Handler
+	mux *chi.Mux
+}
+
+func serverMux(srv *http.Server) (*chi.Mux, error) {
+	switch handler := srv.Handler.(type) {
+	case *chi.Mux:
+		return handler, nil
+	case *h2cServerHandler:
+		return handler.mux, nil
+	default:
+		return nil, fmt.Errorf("server handler %T does not contain a chi mux", srv.Handler)
 	}
 }
 
 // WithGRPC enables GRPC to be served over the
 func WithGRPC(host string, server *grpc.Server) Option {
 	return func(srv *http.Server) error {
-		mux := srv.Handler.(*chi.Mux)
+		mux, err := serverMux(srv)
+		if err != nil {
+			return err
+		}
 		filters := []MatcherFunc{
 			IsGRPC,
 		}

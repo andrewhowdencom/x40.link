@@ -33,10 +33,6 @@ func ResolveOptions() ([]Option, error) {
 		opts = append(opts, WithListenAddress(addr))
 	}
 
-	if cfg.ServerH2CEnabled.Value() {
-		opts = append(opts, WithH2C())
-	}
-
 	server, err := apidi.WireGRPCServer()
 	if err != nil && !errors.Is(err, cfg.ErrMissingOptions) {
 		return nil, ErrDependencyFailure
@@ -50,6 +46,13 @@ func ResolveOptions() ([]Option, error) {
 	}
 
 	opts = append(opts, WithStorage(storage, name))
+
+	// H2C wraps the completed request handler. Keep it last so the
+	// connection-level handler sits outside chi and each HTTP/2 stream
+	// receives an independent routing context.
+	if cfg.ServerH2CEnabled.Value() {
+		opts = append(opts, WithH2C())
+	}
 
 	return opts, nil
 }

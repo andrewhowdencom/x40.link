@@ -10,7 +10,7 @@ require (
 	github.com/andrewhowdencom/sysexits v0.0.0-20230825110138-f9dd56ec6fce
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
-	github.com/google/wire v0.6.0
+	github.com/google/wire v0.7.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.3.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
