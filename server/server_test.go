@@ -111,6 +111,8 @@ func TestNewServer_WithStorage(t *testing.T) {
 }
 
 func TestNewServer_WithH2CConcurrentRequests(t *testing.T) {
+	rec := withSpanRecorder(t)
+
 	storage := test.New()
 	require.NoError(t, storage.Put(context.Background(), &url.URL{
 		Host: "test",
@@ -122,11 +124,14 @@ func TestNewServer_WithH2CConcurrentRequests(t *testing.T) {
 
 	srv, err := server.New(
 		server.WithH2C(),
+		server.WithOtel(),
 		server.WithStorage(storage, "hashmap"),
 	)
 	require.NoError(t, err)
 
-	ts := httptest.NewServer(srv.Handler)
+	ts := httptest.NewUnstartedServer(srv.Handler)
+	ts.Config.ConnContext = srv.ConnContext
+	ts.Start()
 	t.Cleanup(ts.Close)
 
 	transport := &http2.Transport{
@@ -194,5 +199,32 @@ func TestNewServer_WithH2CConcurrentRequests(t *testing.T) {
 		assert.Equal(t, 2, got.proto)
 		assert.Equal(t, http.StatusTemporaryRedirect, got.status)
 		assert.Empty(t, got.allow)
+	}
+
+	connectionRequests := map[int64]int{}
+	redirects := 0
+	for _, span := range rec.Ended() {
+		if span.Name() != server.SpanNameRedirect {
+			continue
+		}
+		redirects++
+
+		route, ok := spanAttribute(span, "http.route")
+		require.True(t, ok)
+		assert.Equal(t, "/*", route.AsString())
+
+		protocol, ok := spanAttribute(span, "net.protocol.version")
+		require.True(t, ok)
+		assert.Equal(t, "2.0", protocol.AsString())
+
+		connectionID, ok := spanAttribute(span, server.TraceAttributeServerConnectionID)
+		require.True(t, ok)
+		connectionRequests[connectionID.AsInt64()]++
+	}
+
+	assert.Equal(t, requests, redirects)
+	assert.Less(t, len(connectionRequests), requests)
+	for _, count := range connectionRequests {
+		assert.Greater(t, count, 1)
 	}
 }

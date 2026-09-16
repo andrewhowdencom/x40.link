@@ -3,15 +3,21 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
+	"sync/atomic"
 
 	"github.com/andrewhowdencom/x40.link/server/message"
 	"github.com/andrewhowdencom/x40.link/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"go.opentelemetry.io/otel/trace"
 	//nolint:staticcheck // SA1019: golang.org/x/net/http2/h2c is deprecated.
 	// Migrate to http.Server.Protocols = []http.Protocol{"h2c"} (Go 1.24+)
 	// once chi's h2c helper supports it; tracked as a follow-up.
@@ -22,10 +28,27 @@ import (
 	"google.golang.org/grpc"
 )
 
-// SpanNameRedirect is the OpenTelemetry span name emitted by the HTTP
-// redirect handler. Defined here so it can be referenced by tests and
-// dashboards without depending on the package internals.
-const SpanNameRedirect = "redirect"
+const (
+	// SpanNameRedirect is the OpenTelemetry span name emitted by the HTTP
+	// redirect handler. Defined here so it can be referenced by tests and
+	// dashboards without depending on the package internals.
+	SpanNameRedirect = "redirect"
+
+	// SpanNameRejectedRequest identifies requests rejected by the router
+	// before link resolution starts.
+	SpanNameRejectedRequest = "reject_request"
+
+	// TraceAttributeServerConnectionID correlates spans that share a TCP
+	// connection. It is deliberately trace-only because every connection
+	// produces a unique, high-cardinality value.
+	TraceAttributeServerConnectionID = "x40.link.server.connection.id"
+
+	redirectRoutePattern = "/*"
+)
+
+type connectionIDContextKey struct{}
+
+var nextConnectionID atomic.Int64
 
 // WithOtel wraps the server's standard request chain in
 // otelhttp.NewMiddleware so the HTTP redirect emits a span named
@@ -39,6 +62,8 @@ func WithOtel() Option {
 			return err
 		}
 
+		instrumentConnections(srv)
+
 		mux.Use(otelhttp.NewMiddleware(SpanNameRedirect,
 			otelhttp.WithSpanNameFormatter(func(_ string, _ *http.Request) string {
 				return SpanNameRedirect
@@ -46,10 +71,50 @@ func WithOtel() Option {
 			otelhttp.WithFilter(func(r *http.Request) bool {
 				return r.Header.Get(message.HeaderContentType) != message.MIMEGRPC
 			}),
-		))
+		), annotateHTTPSpan)
 
 		return nil
 	}
+}
+
+func instrumentConnections(srv *http.Server) {
+	previous := srv.ConnContext
+	srv.ConnContext = func(ctx context.Context, conn net.Conn) context.Context {
+		if previous != nil {
+			ctx = previous(ctx, conn)
+		}
+
+		return context.WithValue(ctx, connectionIDContextKey{}, nextConnectionID.Add(1))
+	}
+}
+
+func annotateHTTPSpan(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get(message.HeaderContentType) == message.MIMEGRPC {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		span := trace.SpanFromContext(r.Context())
+		if connectionID, ok := r.Context().Value(connectionIDContextKey{}).(int64); ok {
+			span.SetAttributes(attribute.Int64(TraceAttributeServerConnectionID, connectionID))
+		}
+
+		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+		next.ServeHTTP(ww, r)
+
+		route := chi.RouteContext(r.Context()).RoutePattern()
+		if route == "" && ww.Status() == http.StatusMethodNotAllowed {
+			route = redirectRoutePattern
+		}
+		if route != "" {
+			span.SetAttributes(semconv.HTTPRoute(route))
+		}
+
+		if ww.Status() == http.StatusMethodNotAllowed {
+			span.SetName(SpanNameRejectedRequest)
+		}
+	})
 }
 
 // Option is a function type that modifies the behavior of the server
@@ -121,7 +186,7 @@ func WithStorage(str storage.Storer, name string) Option {
 			storage: name,
 		}
 
-		mux.Get("/*", sh.Redirect)
+		mux.Get(redirectRoutePattern, sh.Redirect)
 
 		return nil
 	}

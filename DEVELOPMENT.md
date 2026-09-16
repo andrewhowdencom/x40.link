@@ -76,10 +76,17 @@ the server starts listening. The OTel SDK is configured via the existing
 ### What gets emitted
 
 * **Span names** are business-operation names defined in `AGENTS.md`:
-  `create_link`, `resolve_link`, `redirect`, `storage.lookup`,
-  `storage.write`. These are emitted via the OTel auto-instrumentation
-  libraries (`otelhttp`, `otelgrpc`) with span-name formatters that
-  rename the default method/path names.
+  `create_link`, `resolve_link`, `redirect`, `reject_request`,
+  `storage.lookup`, `storage.write`. These are emitted via the OTel
+  auto-instrumentation libraries (`otelhttp`, `otelgrpc`) with span-name
+  formatters that rename the default method/path names. HTTP server spans
+  include the matched `http.route`; rejected methods are renamed to
+  `reject_request` rather than being reported as redirects.
+* **HTTP connection correlation** is available on traces through the
+  `x40.link.server.connection.id` attribute. The value identifies requests
+  multiplexed over one process-local TCP connection and is intentionally
+  excluded from metrics because it is high cardinality. Combine it with the
+  Cloud Run `faas.instance` resource attribute when comparing instances.
 * **Custom business metrics** under the `x40.link` namespace:
   `links.created`, `links.resolved`, `links.not_found`,
   `storage.errors`. The first three carry a `storage` label
