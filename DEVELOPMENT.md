@@ -4,6 +4,38 @@ This document is for engineers working on the x40.link codebase. It covers
 project layout, design notes, and behavior that isn't obvious from reading
 the code.
 
+## CLI Releases
+
+Publish a GitHub release against a tag containing
+`.github/workflows/release-cli.yml`. Publishing either a stable release or a
+prerelease starts the workflow; saving a draft or pushing a tag alone does
+not. The workflow checks out that tag, tests the CLI, cross-compiles all
+seven supported targets, verifies the archives, and attaches them alongside
+`SHA256SUMS` to the same release. No additional secret is needed: uploads
+use the workflow's `GITHUB_TOKEN` with `contents: write` permission.
+
+Each `x40-cli_<os>_<arch>.tar.gz` archive contains only `@` (or `@.exe` for
+Windows). Linux ARM builds target ARMv7. All builds disable CGO and embed
+the release tag using the existing version linker flag. Archive names stay
+constant across releases. If an upload fails, rerun the workflow from
+GitHub Actions; existing assets with matching names will be replaced.
+
+Packaging and verification are defined directly in `Taskfile.yml`.
+To build and validate the same artifacts locally, install Go, Task,
+GNU tar and `sha256sum`, then run:
+
+```bash
+task tools/go/install
+RELEASE_VERSION=v1.2.3 task release/cli/test
+```
+
+Ensure Go's binary directory is on `PATH` for the protobuf tools.
+`task release/cli` builds without running the validation suite. Both tasks
+write to `dist/cli-release/`; omitting `RELEASE_VERSION` uses the short Git
+commit hash. Validation checks the checksums, archive contents and target
+metadata, runs the host binary's help commands, and runs the CLI unit tests.
+Run it on one of the supported host platforms with the tools listed above.
+
 ## CLI Subcommands
 
 The CLI binary lives in `cli/`. It exposes two subcommands:

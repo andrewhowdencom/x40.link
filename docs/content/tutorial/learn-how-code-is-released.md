@@ -199,6 +199,19 @@ GitHub pages.
 
 The domain `x40.link` points to GitHub pages.
 
+### Release the CLI binaries
+
+Publishing a [GitHub release](https://github.com/andrewhowdencom/x40.link/releases)
+starts the [CLI release workflow](https://github.com/andrewhowdencom/x40.link/blob/main/.github/workflows/release-cli.yml).
+This applies to stable releases and prereleases; drafts and tag pushes alone
+do not trigger it. The release tag must contain the workflow.
+
+The workflow tests and builds the tagged CLI for Linux (amd64, arm64 and
+ARMv7), macOS (amd64 and arm64), and Windows (amd64 and arm64). It attaches
+`x40-cli_<os>_<arch>.tar.gz` archives and `SHA256SUMS` to the release. Download
+the archive for your platform, extract it, and put `@` (or `@.exe` on Windows)
+on your `PATH`.
+
 ### Release to GitHub (via packages)
 
 If there are changes to the code, the Containerfile, or specific configuration files, GitHub actions will publish a
