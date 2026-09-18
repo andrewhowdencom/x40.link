@@ -18,6 +18,13 @@ before the code solution is even reasonably stable.
 
 ### Command-Line
 
+Download `x40-cli_<os>_<arch>.tar.gz` from the
+[GitHub releases](https://github.com/andrewhowdencom/x40.link/releases) page.
+Archives are available for Linux (`amd64`, `arm64`, `arm` / ARMv7), macOS
+(`darwin`, `amd64` or `arm64`), and Windows (`amd64`, `arm64`). Extract the
+archive and put `@` (Windows: `@.exe`) in a directory on your `PATH`.
+Each release includes `SHA256SUMS` to verify the downloaded archives.
+
 The CLI binary has two subcommands, both of which take a short URL or destination URL as a positional
 argument.
 

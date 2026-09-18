@@ -1,0 +1,45 @@
+name: "release:cli"
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-cli-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Install Task
+        uses: arduino/setup-task@v1
+
+      - name: Install protobuf tools
+        run: task tools/go/install
+
+      - name: Build and verify CLI release archives
+        run: task release/cli/test
+        env:
+          RELEASE_VERSION: ${{ github.event.release.tag_name }}
+
+      - name: Upload release assets
+        run: gh release upload "$RELEASE_TAG" dist/cli-release/* --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
