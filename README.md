@@ -25,24 +25,36 @@ Archives are available for Linux (`amd64`, `arm64`, `arm` / ARMv7), macOS
 archive and put `@` (Windows: `@.exe`) in a directory on your `PATH`.
 Each release includes `SHA256SUMS` to verify the downloaded archives.
 
-The CLI binary has two subcommands, both of which take a short URL or destination URL as a positional
-argument.
+The CLI binary supports three operations.
 
 **Create a short link** (`@`):
 
-    @ https://my.destination.url/path
-
-    @ https://source.domain/path https://my.destination.url/path
+```bash
+@ https://my.destination.url/path
+@ https://source.domain/path https://my.destination.url/path
+```
 
 The first form generates a random short URL on the default domain. The second form lets you supply
-the short URL explicitly. This subcommand requires OAuth credentials.
+the short URL explicitly. This operation requires OAuth credentials.
+
+**Log in with a different account** (`@ login`):
+
+```bash
+@ login
+```
+
+Always starts a fresh OAuth device authorization flow. The CLI replaces its cached credentials only
+after authentication succeeds, so a failed or cancelled login leaves the existing account available.
+See [Change the CLI account](docs/content/how-to/change-cli-account.md) for the complete workflow.
 
 **Look up a short link's destination** (`@ resolve`):
 
-    @ resolve https://source.domain/path
+```bash
+@ resolve https://source.domain/path
+```
 
 Prints the URL the short link redirects to. The destination of a short link is functionally public
-information (the HTTP redirect already discloses it to anonymous users), so this subcommand does
+information (the HTTP redirect already discloses it to anonymous users), so this operation does
 not require authentication.
 
 ## Understanding this work
