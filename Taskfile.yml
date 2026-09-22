@@ -79,6 +79,7 @@ tasks:
             binary=@.exe
         fi
         "$scratch/$host/$binary" --help > /dev/null
+        "$scratch/$host/$binary" login --help > /dev/null
         "$scratch/$host/$binary" resolve --help > /dev/null
       - go test ./cli/...
 
