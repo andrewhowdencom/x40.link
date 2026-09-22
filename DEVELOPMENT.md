@@ -38,20 +38,28 @@ Run it on one of the supported host platforms with the tools listed above.
 
 ## CLI Subcommands
 
-The CLI binary lives in `cli/`. It exposes two subcommands:
+The CLI binary lives in `cli/`. It exposes three operations:
 
 * **`@ <url>`** (root command) — create a short link. Requires OAuth
   credentials via the device authorization flow. See `cli/main.go::DoURL`.
+* **`@ login`** — run a fresh device authorization flow and replace the
+  cached token. It does not call the x40 API. See `cli/main.go::DoLogin` and
+  `cli/auth/auth.go::Login`.
 * **`@ resolve <url>`** — look up the destination of a short link. Does
   *not* require OAuth credentials. See `cli/main.go::DoResolve` and
   `cli/main.go::doResolveWithClient`.
 
 The flag sets are split into `apiFlagSet` (just `cfg.APIEndpoint`) and
 `authFlagSet` (the OAuth-related flags). The root command uses both
-(composed into `urlFlagSet`); the `resolve` subcommand uses only the
-`apiFlagSet`. Adding a new subcommand that needs a different set of
-configuration is a matter of attaching the right flag set to the new
-cobra command.
+(composed into `urlFlagSet`), `login` uses only `authFlagSet`, and `resolve`
+uses only `apiFlagSet`. Adding a new subcommand that needs a different set
+of configuration is a matter of attaching the right flag set to the new
+Cobra command.
+
+Explicit login is transactional from the CLI's perspective. `auth.Login`
+completes the device flow and serializes the returned token before calling
+the existing atomic token-storage write. Authentication, cancellation, or
+write failures therefore leave the previously cached credentials unchanged.
 
 ## Public vs. Authenticated gRPC Methods
 

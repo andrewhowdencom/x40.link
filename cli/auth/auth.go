@@ -3,6 +3,8 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"path/filepath"
 
 	"github.com/adrg/xdg"
@@ -19,8 +21,59 @@ import (
 // TokenSource returns a TokenSource appropriate for the CLI Application, or an error if this failed.
 func TokenSource() (oauth2.TokenSource, error) {
 	ctx := context.Background()
+	oauthCfg := oauthConfig()
 
-	cfg := &oauth2.Config{
+	str, err := tokenStorage()
+	if err != nil {
+		return nil, err
+	}
+
+	ts, err := tokens.NewCachingSource(
+		ctx,
+		oauthCfg.TokenSource,
+		seeds.DeviceAuth(jwts.AudienceX40API, oauthCfg),
+		str,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return ts, nil
+}
+
+// Login runs a fresh device authorization flow and replaces the cached token
+// only after authentication succeeds.
+func Login(ctx context.Context) error {
+	oauthCfg := oauthConfig()
+
+	str, err := tokenStorage()
+	if err != nil {
+		return fmt.Errorf("prepare token storage: %w", err)
+	}
+
+	return login(ctx, seeds.DeviceAuth(jwts.AudienceX40API, oauthCfg), str)
+}
+
+func login(ctx context.Context, seed seeds.Seed, str storage.Storage) error {
+	tok, err := seed(ctx)
+	if err != nil {
+		return fmt.Errorf("authenticate: %w", err)
+	}
+
+	encoded, err := json.Marshal(tok)
+	if err != nil {
+		return fmt.Errorf("encode token: %w", err)
+	}
+
+	if err := str.Write(encoded); err != nil {
+		return fmt.Errorf("store token: %w", err)
+	}
+
+	return nil
+}
+
+func oauthConfig() *oauth2.Config {
+	return &oauth2.Config{
 		ClientID: viper.GetString(cfg.OAuth2ClientID.Path),
 		Endpoint: oauth2.Endpoint{
 			DeviceAuthURL: viper.GetString(cfg.OAuth2DeviceAuthorizationEndpoint.Path),
@@ -28,19 +81,13 @@ func TokenSource() (oauth2.TokenSource, error) {
 		},
 		Scopes: api.X40PermissionsList(),
 	}
+}
 
+func tokenStorage() (storage.Storage, error) {
 	tokPath, err := xdg.DataFile(filepath.Join("x40", "cli-token"))
 	if err != nil {
 		return nil, err
 	}
 
-	ts, err := tokens.NewCachingSource(ctx, cfg.TokenSource, seeds.DeviceAuth(jwts.AudienceX40API, cfg), &storage.File{
-		Path: tokPath,
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return ts, nil
+	return &storage.File{Path: tokPath}, nil
 }

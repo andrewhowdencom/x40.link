@@ -26,9 +26,9 @@ import (
 // Flag sets.
 //
 // The CLI exposes two kinds of commands: those that need a backend gRPC client
-// ("api") and those that additionally need an OAuth token ("auth"). The root
-// command (which creates a short link) needs both; the "resolve" subcommand
-// needs only the API endpoint, since the gRPC Get RPC it calls is public.
+// ("api") and those that additionally need OAuth configuration ("auth"). The
+// root command (which creates a short link) needs both; "resolve" needs only the
+// API endpoint, while "login" needs only OAuth configuration.
 var (
 	apiFlagSet = func() *pflag.FlagSet {
 		fs := &pflag.FlagSet{}
@@ -61,9 +61,8 @@ var (
 		return fs
 	}()
 
-	// urlFlagSet is preserved as a composition of the two for the existing root command,
-	// which is auth-required. New commands that don't need auth should attach only
-	// apiFlagSet.
+	// urlFlagSet composes both sets for the root command. Subcommands attach
+	// only the configuration they need.
 	urlFlagSet = func() *pflag.FlagSet {
 		fs := &pflag.FlagSet{}
 
@@ -97,6 +96,10 @@ Or, look up the destination of an existing short link:
 
     @ resolve https://source.domain/path
 
+Replace the cached login with a different account:
+
+    @ login
+
 	`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: DoURL,
@@ -121,6 +124,24 @@ Example:
 `,
 	Args: cobra.ExactArgs(1),
 	RunE: DoResolve,
+}
+
+// loginCmd is the "login" subcommand. It always runs a fresh OAuth device
+// authorization flow and replaces cached credentials only after success.
+var loginCmd = &cobra.Command{
+	Use:   "login",
+	Short: "Log in with a different account",
+	Long: `Log in with a different account.
+
+Start a fresh OAuth device authorization flow. Existing cached credentials
+remain available if authentication fails or is cancelled.
+
+Example:
+
+    @ login
+`,
+	Args: cobra.NoArgs,
+	RunE: DoLogin,
 }
 
 // DoURL is the root command for the client, and generates URLs
@@ -175,6 +196,27 @@ func DoURL(_ *cobra.Command, args []string) error {
 
 	url, _ := strings.CutPrefix(resp.Url, "//")
 	fmt.Println(url)
+
+	return nil
+}
+
+// DoLogin is the cobra command handler for the "login" subcommand.
+func DoLogin(cmd *cobra.Command, _ []string) error {
+	if err := doLogin(cmd.Context(), auth.Login); err != nil {
+		return err
+	}
+
+	if _, err := fmt.Fprintln(cmd.OutOrStdout(), "Login successful."); err != nil {
+		return fmt.Errorf("%w: write login confirmation: %w", sysexits.Software, err)
+	}
+
+	return nil
+}
+
+func doLogin(ctx context.Context, login func(context.Context) error) error {
+	if err := login(ctx); err != nil {
+		return fmt.Errorf("%w: %w", sysexits.Software, err)
+	}
 
 	return nil
 }
@@ -244,7 +286,8 @@ func classifyResolveError(err error) error {
 
 func init() {
 	Root.Flags().AddFlagSet(urlFlagSet)
-	Root.AddCommand(resolveCmd)
+	Root.AddCommand(loginCmd, resolveCmd)
+	loginCmd.Flags().AddFlagSet(authFlagSet)
 	resolveCmd.Flags().AddFlagSet(apiFlagSet)
 }
 
