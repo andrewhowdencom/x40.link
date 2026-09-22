@@ -7,6 +7,7 @@ import (
 
 	gendev "github.com/andrewhowdencom/x40.link/api/gen/dev"
 	"github.com/andrewhowdencom/sysexits"
+	"github.com/andrewhowdencom/x40.link/cfg"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -26,6 +27,60 @@ func (f *fakeClient) Get(ctx context.Context, in *gendev.GetRequest, opts ...grp
 
 func (f *fakeClient) New(_ context.Context, _ *gendev.NewRequest, _ ...grpc.CallOption) (*gendev.Response, error) {
 	panic("fakeClient.New invoked; doResolveWithClient should not call New")
+}
+
+func TestLoginCommand(t *testing.T) {
+	command, args, err := Root.Find([]string{"login"})
+	assert.NoError(t, err)
+	assert.Same(t, loginCmd, command)
+	assert.Empty(t, args)
+
+	assert.NoError(t, loginCmd.Args(loginCmd, nil))
+	assert.Error(t, loginCmd.Args(loginCmd, []string{"unexpected"}))
+
+	for _, path := range []string{
+		cfg.OAuth2ClientID.Path,
+		cfg.OAuth2AuthorizationURL.Path,
+		cfg.OAuth2DeviceAuthorizationEndpoint.Path,
+		cfg.OAuth2TokenURL.Path,
+	} {
+		assert.NotNilf(t, loginCmd.Flags().Lookup(path), "missing OAuth flag %s", path)
+	}
+	assert.Nil(t, loginCmd.Flags().Lookup(cfg.APIEndpoint.Path))
+}
+
+func TestDoLogin(t *testing.T) {
+	loginErr := errors.New("login failed")
+
+	for _, tc := range []struct {
+		name    string
+		login   func(context.Context) error
+		wantErr error
+	}{
+		{
+			name: "successful login",
+			login: func(_ context.Context) error {
+				return nil
+			},
+		},
+		{
+			name: "failed login is a software error",
+			login: func(_ context.Context) error {
+				return loginErr
+			},
+			wantErr: sysexits.Software,
+		},
+	} {
+		tc := tc
+
+		t.Run(tc.name, func(t *testing.T) {
+			err := doLogin(context.Background(), tc.login)
+			assert.ErrorIs(t, err, tc.wantErr)
+			if tc.wantErr != nil {
+				assert.ErrorIs(t, err, loginErr)
+			}
+		})
+	}
 }
 
 func TestDoResolveWithClient(t *testing.T) {
