@@ -206,7 +206,10 @@ func DoLogin(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	fmt.Fprintln(cmd.OutOrStdout(), "Login successful.")
+	if _, err := fmt.Fprintln(cmd.OutOrStdout(), "Login successful."); err != nil {
+		return fmt.Errorf("%w: write login confirmation: %w", sysexits.Software, err)
+	}
+
 	return nil
 }
 
