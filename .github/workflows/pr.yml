@@ -60,16 +60,8 @@ jobs:
       run: task test
 
     - name: "Lint"
-      uses: golangci/golangci-lint-action@v9
+      uses: golangci/golangci-lint-action@v9.3.0
       with:
-        # Pin a version that supports Go 1.25 targets. golangci-lint
-        # v1.64.x (the previous "latest" used by the action) refuses
-        # to lint a project whose go.mod declares `go 1.25.0` or
-        # higher because v1.64 was built with Go 1.24 ("the Go
-        # language version used to build golangci-lint is lower than
-        # the targeted Go version"). The v1.x line was discontinued
-        # after v1.64.8 (March 2025); v2.x is the actively
-        # maintained line and accepts the newer targets. Pinning
-        # explicitly avoids the upstream default flipping back to a
-        # too-old binary in the future.
+        # Pin the current v2 release so CI uses a stable configuration
+        # schema and linter behavior.
         version: v2.13.2

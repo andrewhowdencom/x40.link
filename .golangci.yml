@@ -1,21 +1,14 @@
 ---
-# golangci-lint v2 requires the `version: "2"` schema marker.
 version: "2"
 
 linters:
+  # Keep the baseline stable when golangci-lint changes its defaults.
+  default: standard
   enable:
     - revive
-
-  # Disable a specific revive rule. v2 removed text-based
-  # `issues.exclude-rules` in favor of per-linter, per-rule
-  # configuration under `linters.settings.<name>.rules`.
   settings:
     revive:
       rules:
+        # Exported constructors intentionally return package-private types.
         - name: unexported-return
-          # Common in this codebase: exported constructors returning
-          # unexported types (test fixtures, package-private helpers
-          # like cli/auth/per_rpc_creds.go, storage/test, storage/yaml).
-          # The maintainers accept this idiom; revive's default rule
-          # would otherwise flag it as an "annoying to use" lint.
           disabled: true
