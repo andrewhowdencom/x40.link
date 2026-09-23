@@ -26,6 +26,12 @@ resource "google_dns_managed_zone" "dhse-link" {
   description = "A short domain for 'DHSE'"
 }
 
+resource "google_dns_managed_zone" "x5e-link" {
+  name        = "x5e-link"
+  dns_name    = "0x5e.link."
+  description = "A short domain for 0x5e"
+}
+
 resource "google_dns_record_set" "x40-dev__ALIAS" {
   managed_zone = google_dns_managed_zone.x40-dev.name
   name         = google_dns_managed_zone.x40-dev.dns_name
@@ -81,6 +87,18 @@ resource "google_dns_record_set" "dhse-link" {
   ]
 }
 
+resource "google_dns_record_set" "x5e-link" {
+  for_each     = toset(var.x5e_link_domains)
+  name         = "${each.value}."
+  managed_zone = google_dns_managed_zone.x5e-link.name
+  ttl          = 300
+  type         = "A"
+
+  rrdatas = [
+    google_compute_global_address.x40-link.address
+  ]
+}
+
 # Setup network path to access the service
 resource "google_compute_global_address" "x40-link" {
   name = "x40-link"
@@ -91,6 +109,14 @@ resource "google_compute_managed_ssl_certificate" "all-link-shorteners-v4" {
 
   managed {
     domains = concat(var.x40_link_domains, var.dhse_link_domains, ["andrewhowden.com"])
+  }
+}
+
+resource "google_compute_managed_ssl_certificate" "x5e-link" {
+  name = "x5e-link"
+
+  managed {
+    domains = var.x5e_link_domains
   }
 }
 
@@ -124,7 +150,8 @@ resource "google_compute_target_https_proxy" "x40-link" {
   url_map = google_compute_url_map.x40-link.id
 
   ssl_certificates = [
-    google_compute_managed_ssl_certificate.all-link-shorteners-v4.id
+    google_compute_managed_ssl_certificate.all-link-shorteners-v4.id,
+    google_compute_managed_ssl_certificate.x5e-link.id
   ]
 }
 

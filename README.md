@@ -97,7 +97,7 @@ writing each unit of work. You can see how the thinking has changed over time! Y
 
 Look at the [infrastructure as code](https://github.com/andrewhowdencom/x40.link/tree/main/deploy/prod/tf) definitions,
 using the [Tofu](https://opentofu.org/) (or open-source Terraform implementation) infrastructure tool to
-[create DNS records](https://github.com/andrewhowdencom/x40.link/blob/main/deploy/prod/tf/dns.tf). See how it is
+[create DNS records](https://github.com/andrewhowdencom/x40.link/blob/main/deploy/prod/tf/cr.tf). See how it is
 [configured to store its state in Google Cloud.](https://github.com/andrewhowdencom/x40.link/blob/main/deploy/prod/tf/state.tf)
 
 You can also see how we pack the application [into a container](https://github.com/andrewhowdencom/x40.link/blob/main/Containerfile)
@@ -110,6 +110,7 @@ You can check the infrastructure by visiting the managed domains with:
 
 * **docs**: https://x40.dev
 * **app**: https://x40.link
+* **short links**: https://0x5e.link
 
 **🤖 Task Runner**
 

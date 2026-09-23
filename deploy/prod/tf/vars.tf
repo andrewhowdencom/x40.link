@@ -9,8 +9,13 @@ variable "h4n_me_domains" {
 }
 
 variable "dhse_link_domains" {
-  type = list(string)
+  type    = list(string)
   default = ["dhse.link"]
+}
+
+variable "x5e_link_domains" {
+  type    = list(string)
+  default = ["0x5e.link"]
 }
 
 variable "cloud-run__x40-link" {
