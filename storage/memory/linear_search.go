@@ -49,3 +49,17 @@ func (s *LinearSearch) Put(_ context.Context, f *url.URL, t *url.URL) error {
 
 	return nil
 }
+
+func (s *LinearSearch) List(_ context.Context, domain string) ([]storage.Link, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	links := make([]storage.Link, 0)
+	for _, item := range s.idx {
+		if domain == "" || item.from.Host == domain {
+			links = append(links, storage.Link{From: item.from, To: item.to})
+		}
+	}
+	storage.SortLinks(links)
+	return links, nil
+}

@@ -144,6 +144,23 @@ Example:
 	RunE: DoLogin,
 }
 
+var listCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List links visible to your account",
+	Long: `List short links visible to your account.
+
+Filter by source domain with --domain. Firestore returns links owned by
+your account; storage backends without ownership data return all links.
+
+Examples:
+
+    @ list
+    @ list --domain x40.link
+`,
+	Args: cobra.NoArgs,
+	RunE: DoList,
+}
+
 // DoURL is the root command for the client, and generates URLs
 func DoURL(_ *cobra.Command, args []string) error {
 
@@ -242,6 +259,47 @@ func DoResolve(_ *cobra.Command, args []string) error {
 	return nil
 }
 
+// DoList fetches links through the authenticated API and prints one mapping per line.
+func DoList(cmd *cobra.Command, _ []string) error {
+	domain, err := cmd.Flags().GetString("domain")
+	if err != nil {
+		return fmt.Errorf("%w: %s", sysexits.Software, err)
+	}
+	ts, err := auth.TokenSource()
+	if err != nil {
+		return fmt.Errorf("%w: %s", sysexits.Software, err)
+	}
+	client, err := api.NewGRPCClient(
+		viper.GetString(cfg.APIEndpoint.Path),
+		grpc.WithPerRPCCredentials(auth.NewPerRPCCredentials(ts)),
+	)
+	if err != nil {
+		return fmt.Errorf("%w: %s", sysexits.NoHost, err)
+	}
+	ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
+	defer cancel()
+	links, err := doListWithClient(ctx, client, domain)
+	if err != nil {
+		return err
+	}
+	for _, link := range links {
+		source, _ := strings.CutPrefix(link.From, "//")
+		destination, _ := strings.CutPrefix(link.To, "//")
+		if _, err := fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", source, destination); err != nil {
+			return fmt.Errorf("%w: %s", sysexits.Software, err)
+		}
+	}
+	return nil
+}
+
+func doListWithClient(ctx context.Context, client api.Client, domain string) ([]*dev.Link, error) {
+	response, err := client.List(ctx, &dev.ListRequest{Domain: domain})
+	if err != nil {
+		return nil, classifyResolveError(err)
+	}
+	return response.Links, nil
+}
+
 // doResolveWithClient is the testable core of the resolve flow. It takes a
 // ready-to-use gRPC client, an input URL string, and returns the destination
 // URL (with any leading "//" stripped, matching the DoURL convention) or a
@@ -286,9 +344,11 @@ func classifyResolveError(err error) error {
 
 func init() {
 	Root.Flags().AddFlagSet(urlFlagSet)
-	Root.AddCommand(loginCmd, resolveCmd)
+	Root.AddCommand(loginCmd, resolveCmd, listCmd)
 	loginCmd.Flags().AddFlagSet(authFlagSet)
 	resolveCmd.Flags().AddFlagSet(apiFlagSet)
+	listCmd.Flags().AddFlagSet(urlFlagSet)
+	listCmd.Flags().String("domain", "", "restrict results to this source domain")
 }
 
 func main() {

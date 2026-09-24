@@ -119,3 +119,17 @@ func (bs *BinarySearch) Put(_ context.Context, f *url.URL, t *url.URL) error {
 
 	return nil
 }
+
+func (bs *BinarySearch) List(_ context.Context, domain string) ([]storage.Link, error) {
+	bs.mu.RLock()
+	defer bs.mu.RUnlock()
+
+	links := make([]storage.Link, 0)
+	for _, item := range bs.idx {
+		if domain == "" || item.from.Host == domain {
+			links = append(links, storage.Link{From: item.from, To: item.to})
+		}
+	}
+	storage.SortLinks(links)
+	return links, nil
+}

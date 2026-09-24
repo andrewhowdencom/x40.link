@@ -104,3 +104,33 @@ func (u URL) New(ctx context.Context, req *dev.NewRequest) (*dev.Response, error
 		Url: from.String(),
 	}, nil
 }
+
+// List returns links visible to the caller, optionally restricted to a source domain.
+func (u URL) List(ctx context.Context, req *dev.ListRequest) (*dev.ListResponse, error) {
+	if req.Domain != "" {
+		parsed, err := url.Parse("//" + req.Domain)
+		if err != nil || parsed.Host != req.Domain || parsed.Hostname() == "" || parsed.Path != "" || parsed.User != nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid domain")
+		}
+	}
+
+	lister, ok := u.Storer.(storage.Lister)
+	if !ok {
+		return nil, status.Error(codes.Unimplemented, "storage does not support listing")
+	}
+	links, err := lister.List(ctx, req.Domain)
+	if errors.Is(err, storage.ErrUnauthorized) {
+		return nil, status.Error(codes.PermissionDenied, "cannot list links")
+	} else if errors.Is(err, storage.ErrListUnsupported) {
+		return nil, status.Error(codes.Unimplemented, "storage does not support listing")
+	} else if err != nil {
+		log.Println(err)
+		return nil, status.Error(codes.Internal, "failed to list links")
+	}
+
+	response := &dev.ListResponse{Links: make([]*dev.Link, 0, len(links))}
+	for _, link := range links {
+		response.Links = append(response.Links, &dev.Link{From: link.From.String(), To: link.To.String()})
+	}
+	return response, nil
+}

@@ -48,3 +48,21 @@ func (ht *HashTable) Put(_ context.Context, f *url.URL, t *url.URL) error {
 
 	return nil
 }
+
+func (ht *HashTable) List(_ context.Context, domain string) ([]storage.Link, error) {
+	ht.mu.RLock()
+	defer ht.mu.RUnlock()
+
+	links := make([]storage.Link, 0)
+	for key, to := range ht.table {
+		from, err := url.Parse(key)
+		if err != nil {
+			return nil, storage.ErrCorrupt
+		}
+		if domain == "" || from.Host == domain {
+			links = append(links, storage.Link{From: from, To: to})
+		}
+	}
+	storage.SortLinks(links)
+	return links, nil
+}

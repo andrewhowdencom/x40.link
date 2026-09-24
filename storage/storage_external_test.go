@@ -195,3 +195,38 @@ func TestOwnership(t *testing.T) {
 		})
 	}
 }
+
+func TestFirestoreList(t *testing.T) {
+	store := externalSinkFactories["firestore"]("list")
+	defer externalSinkTeardown["firestore"]("list")
+	lister, ok := store.(storage.Lister)
+	assert.True(t, ok)
+
+	owner := context.WithValue(context.Background(), storage.CtxKeyAgent, "sub:owner")
+	other := context.WithValue(context.Background(), storage.CtxKeyAgent, "sub:other")
+	for _, item := range []struct {
+		ctx  context.Context
+		from string
+	}{
+		{owner, "//a.example"},
+		{owner, "//a.example/one"},
+		{owner, "//a.example/plus+sign"},
+		{owner, "//b.example/two"},
+		{other, "//a.example/other"},
+	} {
+		from, err := url.Parse(item.from)
+		assert.NoError(t, err)
+		assert.NoError(t, store.Put(item.ctx, from, &url.URL{Host: "target.example"}))
+	}
+
+	all, err := lister.List(owner, "")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"//a.example", "//a.example/one", "//a.example/plus+sign", "//b.example/two"}, sources(all))
+
+	filtered, err := lister.List(owner, "a.example")
+	assert.NoError(t, err)
+	assert.Equal(t, []string{"//a.example", "//a.example/one", "//a.example/plus+sign"}, sources(filtered))
+
+	_, err = lister.List(context.Background(), "")
+	assert.ErrorIs(t, err, storage.ErrUnauthorized)
+}

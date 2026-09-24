@@ -14,6 +14,7 @@ var (
 	ErrFailed             = errors.New("storage implementation failed")
 	ErrCorrupt            = errors.New("the data returned by the storage is invalid")
 	ErrUnauthorized       = errors.New("you are not the owner of this record")
+	ErrListUnsupported    = errors.New("storage does not support listing")
 )
 
 // CtxKey is a type designed to allow delimiting key/value pairs
@@ -31,6 +32,19 @@ const (
 // user doesn't own the request, or the request cannot be authenticated (e.g. agent is missing)
 type Authenticator interface {
 	Owns(ctx context.Context, u *url.URL) bool
+}
+
+// Link is a short URL and its destination.
+type Link struct {
+	From *url.URL
+	To   *url.URL
+}
+
+// Lister is implemented by storage backends that can enumerate links.
+// Backends with ownership data filter by the agent in ctx; other backends
+// return all matching links.
+type Lister interface {
+	List(ctx context.Context, domain string) ([]Link, error)
 }
 
 // Storer is the interface that retrieves links supplied to it. Methods are named after the RESTful HTTP

@@ -203,6 +203,27 @@ func TestGetURL(t *testing.T) {
 	}
 }
 
+func TestListURL(t *testing.T) {
+	store := test.New()
+	for _, source := range []string{"//a.example/one", "//b.example/two"} {
+		from, err := url.Parse(source)
+		assert.NoError(t, err)
+		assert.NoError(t, store.Put(context.Background(), from, &url.URL{Host: "target.example"}))
+	}
+	server := &dev.URL{Storer: store}
+
+	resp, err := server.List(context.Background(), &gendev.ListRequest{Domain: "a.example"})
+	assert.NoError(t, err)
+	assert.Equal(t, []*gendev.Link{{From: "//a.example/one", To: "//target.example"}}, resp.Links)
+
+	_, err = server.List(context.Background(), &gendev.ListRequest{Domain: "a.example/other"})
+	assert.Equal(t, codes.InvalidArgument, status.Code(err))
+
+	failed := &dev.URL{Storer: test.New(test.WithError(storage.ErrUnauthorized))}
+	_, err = failed.List(context.Background(), &gendev.ListRequest{})
+	assert.Equal(t, codes.PermissionDenied, status.Code(err))
+}
+
 func TestNew(t *testing.T) {
 	t.Parallel()
 

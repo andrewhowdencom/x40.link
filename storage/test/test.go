@@ -64,6 +64,24 @@ func (ts *ts) Put(_ context.Context, f *url.URL, t *url.URL) error {
 	return nil
 }
 
+func (ts *ts) List(_ context.Context, domain string) ([]storage.Link, error) {
+	if ts.err != nil {
+		return nil, ts.err
+	}
+	links := make([]storage.Link, 0)
+	for key, to := range ts.r {
+		from, err := url.Parse(key)
+		if err != nil {
+			return nil, storage.ErrCorrupt
+		}
+		if domain == "" || from.Host == domain {
+			links = append(links, storage.Link{From: from, To: to})
+		}
+	}
+	storage.SortLinks(links)
+	return links, nil
+}
+
 // Must is a utility that can be used to wrap Put and Get, within bootstrap functions.
 func Must(err error) {
 	if err != nil {
