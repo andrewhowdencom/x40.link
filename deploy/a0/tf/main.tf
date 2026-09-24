@@ -7,7 +7,7 @@ terraform {
   required_providers {
     auth0 = {
       source  = "auth0/auth0"
-      version = "1.1.2"
+      version = "1.58.0"
     }
   }
 }
@@ -93,6 +93,9 @@ resource "auth0_role" "api-user" {
 
 resource "auth0_role_permissions" "api-user" {
   role_id = auth0_role.api-user.id
+
+  // Auth0 must create the scopes before they can be assigned to the role.
+  depends_on = [auth0_resource_server_scopes.x40-api-scopes]
 
   permissions {
     name                       = "api.x40.link/scopes/x40.dev.url.ManageURLs.Get"
