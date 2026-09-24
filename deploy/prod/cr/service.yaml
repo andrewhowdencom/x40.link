@@ -17,7 +17,7 @@ spec:
     spec:
       serviceAccountName: x40-link-runtime@andrewhowdencom.iam.gserviceaccount.com
       containerConcurrency: 1000
-      timeoutSeconds: 1
+      timeoutSeconds: 60
       containers:
         - image: europe-west3-docker.pkg.dev/andrewhowdencom/x40-link/x40.link:$VERSION
           command: ["/usr/bin/x40.link"]

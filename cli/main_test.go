@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/andrewhowdencom/sysexits"
 	gendev "github.com/andrewhowdencom/x40.link/api/gen/dev"
@@ -50,6 +52,21 @@ func TestListCommand(t *testing.T) {
 	links, err := doListWithClient(context.Background(), client, "x40.link")
 	assert.NoError(t, err)
 	assert.Equal(t, "//x40.link/a", links[0].From)
+}
+
+func TestRunList(t *testing.T) {
+	var output bytes.Buffer
+	client := &fakeClient{list: func(ctx context.Context, _ *gendev.ListRequest, _ ...grpc.CallOption) (*gendev.ListResponse, error) {
+		deadline, ok := ctx.Deadline()
+		assert.True(t, ok)
+		assert.WithinDuration(t, time.Now().Add(30*time.Second), deadline, time.Second)
+		return &gendev.ListResponse{Links: []*gendev.Link{
+			{From: "//a.co/one", To: "https://destination.example/one"},
+			{From: "//long.example/two", To: "https://destination.example/two"},
+		}}, nil
+	}}
+	assert.NoError(t, runList(context.Background(), client, "", &output))
+	assert.Equal(t, "a.co/one          https://destination.example/one\nlong.example/two  https://destination.example/two\n", output.String())
 }
 
 func TestLoginCommand(t *testing.T) {

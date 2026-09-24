@@ -64,10 +64,12 @@ not require authentication.
 @ list --domain source.domain
 ```
 
-Prints each short URL and destination, separated by a tab. Authentication is
+Prints each short URL and destination in aligned columns. Authentication is
 required. Firestore lists links owned by the signed-in account; backends that
 do not store owners list all links. `--domain` filters by the short URL's
-domain. The current API returns all matching links in one response.
+domain. The current API returns all matching links in one response. Each
+Firestore list reads the matching documents again, so repeated lists consume
+read quota in proportion to the number of matching links.
 
 ## Understanding this work
 
