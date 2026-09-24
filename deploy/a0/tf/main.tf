@@ -41,6 +41,11 @@ resource "auth0_resource_server_scopes" "x40-api-scopes" {
     name        = "api.x40.link/scopes/x40.dev.url.ManageURLs.New"
     description = "Access the RPC method x40.dev.url.ManageURLs.New"
   }
+
+  scopes {
+    name        = "api.x40.link/scopes/x40.dev.url.ManageURLs.List"
+    description = "Access the RPC method x40.dev.url.ManageURLs.List"
+  }
 }
 
 resource "auth0_client" "x40-cli" {
@@ -96,6 +101,11 @@ resource "auth0_role_permissions" "api-user" {
 
   permissions {
     name                       = "api.x40.link/scopes/x40.dev.url.ManageURLs.New"
+    resource_server_identifier = auth0_resource_server.x40-api.identifier
+  }
+
+  permissions {
+    name                       = "api.x40.link/scopes/x40.dev.url.ManageURLs.List"
     resource_server_identifier = auth0_resource_server.x40-api.identifier
   }
 }

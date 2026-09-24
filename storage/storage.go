@@ -33,6 +33,12 @@ type Authenticator interface {
 	Owns(ctx context.Context, u *url.URL) bool
 }
 
+// Link is a short URL and its destination.
+type Link struct {
+	From *url.URL
+	To   *url.URL
+}
+
 // Storer is the interface that retrieves links supplied to it. Methods are named after the RESTful HTTP
 // verbs, as the meanings are semantically similar.
 type Storer interface {
@@ -41,4 +47,9 @@ type Storer interface {
 
 	// Store a map between a shortlink and the destination.
 	Put(ctx context.Context, from *url.URL, to *url.URL) error
+
+	// List returns links from the given source domain, or all domains when
+	// domain is empty. Backends with ownership data filter by the caller in
+	// ctx; backends without it return all matching links.
+	List(ctx context.Context, domain string) ([]Link, error)
 }

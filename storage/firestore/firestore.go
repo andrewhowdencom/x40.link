@@ -17,6 +17,10 @@ import (
 
 // document is the internal format for the data stored in firestore
 type document struct {
+	// From preserves the original source path for listing. Older records do
+	// not contain it and are reconstructed from their document path.
+	From string `firestore:"from,omitempty"`
+
 	// To is where the url should be sent
 	To string `firestore:"to"`
 
@@ -77,6 +81,7 @@ func (fs Firestore) Put(ctx context.Context, from *url.URL, to *url.URL) error {
 
 	// Try and create the document
 	_, err = ref.Set(context.Background(), document{
+		From:  from.String(),
 		To:    to.String(),
 		Owner: owner,
 	})
@@ -107,6 +112,85 @@ func (fs Firestore) Owns(ctx context.Context, u *url.URL) bool {
 	}
 
 	return doc.Owner == agent
+}
+
+// List returns links owned by the authenticated agent. A domain restricts the
+// query to that domain; an empty domain searches all domains.
+func (fs Firestore) List(ctx context.Context, domain string) ([]storage.Link, error) {
+	agent, ok := ctx.Value(storage.CtxKeyAgent).(string)
+	if !ok || agent == "" {
+		return nil, storage.ErrUnauthorized
+	}
+
+	var roots []*firestore.DocumentSnapshot
+	var paths []*firestore.DocumentSnapshot
+	var err error
+	if domain == "" {
+		roots, err = fs.Client.Collection(FirestoreCollection).Where("owner", "==", agent).Documents(ctx).GetAll()
+		if err == nil {
+			paths, err = fs.Client.CollectionGroup("id").Where("owner", "==", agent).Documents(ctx).GetAll()
+		}
+	} else {
+		root, getErr := fs.Client.Collection(FirestoreCollection).Doc(domain).Get(ctx)
+		if getErr == nil {
+			roots = []*firestore.DocumentSnapshot{root}
+		} else if status.Code(getErr) != codes.NotFound {
+			return nil, fmt.Errorf("%w: %s", storage.ErrFailed, getErr)
+		}
+		paths, err = fs.Client.Collection(FirestoreCollection).Doc(domain).Collection("id").Where("owner", "==", agent).Documents(ctx).GetAll()
+	}
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", storage.ErrFailed, err)
+	}
+
+	links := make([]storage.Link, 0, len(roots)+len(paths))
+	for _, snap := range roots {
+		var doc document
+		if err := snap.DataTo(&doc); err != nil {
+			return nil, fmt.Errorf("%w: %s", storage.ErrCorrupt, err)
+		}
+		if doc.Owner != agent {
+			continue
+		}
+		to, err := url.Parse(doc.To)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", storage.ErrCorrupt, err)
+		}
+		from := &url.URL{Host: snap.Ref.ID}
+		if doc.From != "" {
+			from, err = url.Parse(doc.From)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %s", storage.ErrCorrupt, err)
+			}
+		}
+		links = append(links, storage.Link{From: from, To: to})
+	}
+	for _, snap := range paths {
+		if snap.Ref.Parent.Parent == nil || snap.Ref.Parent.Parent.Parent.ID != FirestoreCollection {
+			continue
+		}
+		var doc document
+		if err := snap.DataTo(&doc); err != nil {
+			return nil, fmt.Errorf("%w: %s", storage.ErrCorrupt, err)
+		}
+		if doc.Owner != agent {
+			continue
+		}
+		to, err := url.Parse(doc.To)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", storage.ErrCorrupt, err)
+		}
+		from := &url.URL{Host: snap.Ref.Parent.Parent.ID, Path: strings.ReplaceAll(snap.Ref.ID, "+", "/")}
+		if doc.From != "" {
+			from, err = url.Parse(doc.From)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %s", storage.ErrCorrupt, err)
+			}
+		}
+		links = append(links, storage.Link{From: from, To: to})
+	}
+	storage.SortLinks(links)
+	return links, nil
 }
 
 func (fs Firestore) doc(ref *firestore.DocumentRef) (*document, error) {

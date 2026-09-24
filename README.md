@@ -25,7 +25,7 @@ Archives are available for Linux (`amd64`, `arm64`, `arm` / ARMv7), macOS
 archive and put `@` (Windows: `@.exe`) in a directory on your `PATH`.
 Each release includes `SHA256SUMS` to verify the downloaded archives.
 
-The CLI binary supports three operations.
+The CLI binary supports four operations.
 
 **Create a short link** (`@`):
 
@@ -56,6 +56,18 @@ See [Change the CLI account](docs/content/how-to/change-cli-account.md) for the 
 Prints the URL the short link redirects to. The destination of a short link is functionally public
 information (the HTTP redirect already discloses it to anonymous users), so this operation does
 not require authentication.
+
+**List links** (`@ list`):
+
+```bash
+@ list
+@ list --domain source.domain
+```
+
+Prints each short URL and destination, separated by a tab. Authentication is
+required. Firestore lists links owned by the signed-in account; backends that
+do not store owners list all links. `--domain` filters by the short URL's
+domain. The current API returns all matching links in one response.
 
 ## Understanding this work
 

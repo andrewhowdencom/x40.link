@@ -81,6 +81,7 @@ tasks:
         "$scratch/$host/$binary" --help > /dev/null
         "$scratch/$host/$binary" login --help > /dev/null
         "$scratch/$host/$binary" resolve --help > /dev/null
+        "$scratch/$host/$binary" list --help > /dev/null
       - go test ./cli/...
 
   bin:

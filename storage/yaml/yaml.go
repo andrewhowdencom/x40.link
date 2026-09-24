@@ -77,3 +77,7 @@ func (y *yaml) Get(ctx context.Context, u *url.URL) (*url.URL, error) {
 func (y *yaml) Put(context.Context, *url.URL, *url.URL) error {
 	return storage.ErrReadOnlyStorage
 }
+
+func (y *yaml) List(ctx context.Context, domain string) ([]storage.Link, error) {
+	return y.str.List(ctx, domain)
+}

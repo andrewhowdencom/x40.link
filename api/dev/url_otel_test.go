@@ -99,6 +99,17 @@ func TestInstrumentedURL_NewRenamesSpanToCreateLink(t *testing.T) {
 	assert.Equal(t, "create_link", spans[0].Name())
 }
 
+func TestInstrumentedURL_ListRenamesSpan(t *testing.T) {
+	rec := withSpanRecorder(t)
+	wrapped := InstrumentURL(&URL{Storer: test.New()}, "hashmap")
+	ctx, end := startSpanInCtx(context.Background(), t, "/x40.dev.url.ManageURLs/List")
+	_, err := wrapped.List(ctx, &gendev.ListRequest{})
+	require.NoError(t, err)
+	end()
+	require.Len(t, rec.Ended(), 1)
+	assert.Equal(t, SpanNameListLinks, rec.Ended()[0].Name())
+}
+
 // TestInstrumentedURL_Compiles ensures the wrapper implements the
 // gendev.ManageURLsServer interface. The compile-time check is also
 // expressed as `var _ gendev.ManageURLsServer = (*instrumentedURL)(nil)`

@@ -33,6 +33,7 @@ func tracer() oteltrace.Tracer { return otel.Tracer("x40.link/boltdb") }
 const (
 	SpanNameStorageLookup = "storage.lookup"
 	SpanNameStorageWrite  = "storage.write"
+	SpanNameStorageList   = "storage.list"
 )
 
 // Option modifies the bolt options, allowing the user to set some property of the database.
@@ -150,4 +151,46 @@ func (b *BoltDB) Put(ctx context.Context, f *url.URL, t *url.URL) error {
 	}
 
 	return nil
+}
+
+// List returns every matching link. BoltDB does not store ownership, so the
+// caller's identity does not change the result.
+func (b *BoltDB) List(ctx context.Context, domain string) ([]storage.Link, error) {
+	_, span := tracer().Start(ctx, SpanNameStorageList, oteltrace.WithAttributes(
+		attribute.String("db.system", "boltdb"),
+		attribute.String("db.operation", "read"),
+	))
+	defer span.End()
+
+	links := make([]storage.Link, 0)
+	err := b.db.View(func(tx *bbolt.Tx) error {
+		bucket := tx.Bucket(txBucketName)
+		if bucket == nil {
+			return nil
+		}
+		return bucket.ForEach(func(key, value []byte) error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			from, err := url.Parse(string(key))
+			if err != nil {
+				return ErrDataCorrupt
+			}
+			if domain != "" && from.Host != domain {
+				return nil
+			}
+			to, err := url.Parse(string(value))
+			if err != nil {
+				return ErrDataCorrupt
+			}
+			links = append(links, storage.Link{From: from, To: to})
+			return nil
+		})
+	})
+	if err != nil {
+		span.RecordError(err)
+		return nil, err
+	}
+	storage.SortLinks(links)
+	return links, nil
 }

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	gendev "github.com/andrewhowdencom/x40.link/api/gen/dev"
 	"github.com/andrewhowdencom/sysexits"
+	gendev "github.com/andrewhowdencom/x40.link/api/gen/dev"
 	"github.com/andrewhowdencom/x40.link/cfg"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -18,7 +18,8 @@ import (
 // the Get method is configured per-test; New is left as a panic so we can detect any
 // accidental use.
 type fakeClient struct {
-	get func(ctx context.Context, in *gendev.GetRequest, opts ...grpc.CallOption) (*gendev.Response, error)
+	get  func(ctx context.Context, in *gendev.GetRequest, opts ...grpc.CallOption) (*gendev.Response, error)
+	list func(ctx context.Context, in *gendev.ListRequest, opts ...grpc.CallOption) (*gendev.ListResponse, error)
 }
 
 func (f *fakeClient) Get(ctx context.Context, in *gendev.GetRequest, opts ...grpc.CallOption) (*gendev.Response, error) {
@@ -27,6 +28,28 @@ func (f *fakeClient) Get(ctx context.Context, in *gendev.GetRequest, opts ...grp
 
 func (f *fakeClient) New(_ context.Context, _ *gendev.NewRequest, _ ...grpc.CallOption) (*gendev.Response, error) {
 	panic("fakeClient.New invoked; doResolveWithClient should not call New")
+}
+
+func (f *fakeClient) List(ctx context.Context, in *gendev.ListRequest, opts ...grpc.CallOption) (*gendev.ListResponse, error) {
+	return f.list(ctx, in, opts...)
+}
+
+func TestListCommand(t *testing.T) {
+	command, args, err := Root.Find([]string{"list"})
+	assert.NoError(t, err)
+	assert.Same(t, listCmd, command)
+	assert.Empty(t, args)
+	assert.NotNil(t, listCmd.Flags().Lookup("domain"))
+	assert.NotNil(t, listCmd.Flags().Lookup(cfg.APIEndpoint.Path))
+	assert.NotNil(t, listCmd.Flags().Lookup(cfg.OAuth2ClientID.Path))
+
+	client := &fakeClient{list: func(_ context.Context, req *gendev.ListRequest, _ ...grpc.CallOption) (*gendev.ListResponse, error) {
+		assert.Equal(t, "x40.link", req.Domain)
+		return &gendev.ListResponse{Links: []*gendev.Link{{From: "//x40.link/a", To: "https://example.com"}}}, nil
+	}}
+	links, err := doListWithClient(context.Background(), client, "x40.link")
+	assert.NoError(t, err)
+	assert.Equal(t, "//x40.link/a", links[0].From)
 }
 
 func TestLoginCommand(t *testing.T) {

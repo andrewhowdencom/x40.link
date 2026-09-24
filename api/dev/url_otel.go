@@ -16,6 +16,7 @@ import (
 const (
 	SpanNameResolveLink = "resolve_link"
 	SpanNameCreateLink  = "create_link"
+	SpanNameListLinks   = "list_links"
 )
 
 // instrumentedURL wraps a gendev.ManageURLsServer implementation and:
@@ -33,8 +34,8 @@ const (
 type instrumentedURL struct {
 	gendev.UnimplementedManageURLsServer
 
-	inner    gendev.ManageURLsServer
-	storage  string
+	inner   gendev.ManageURLsServer
+	storage string
 }
 
 // Compile-time check that *instrumentedURL satisfies the interface.
@@ -78,4 +79,10 @@ func (i *instrumentedURL) New(ctx context.Context, req *gendev.NewRequest) (*gen
 		otel.RecordCreated(i.storage)
 	}
 	return resp, err
+}
+
+// List renames the inbound gRPC span to the business operation.
+func (i *instrumentedURL) List(ctx context.Context, req *gendev.ListRequest) (*gendev.ListResponse, error) {
+	trace.SpanFromContext(ctx).SetName(SpanNameListLinks)
+	return i.inner.List(ctx, req)
 }

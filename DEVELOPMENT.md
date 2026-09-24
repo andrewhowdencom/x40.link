@@ -38,7 +38,7 @@ Run it on one of the supported host platforms with the tools listed above.
 
 ## CLI Subcommands
 
-The CLI binary lives in `cli/`. It exposes three operations:
+The CLI binary lives in `cli/`. It exposes four operations:
 
 * **`@ <url>`** (root command) — create a short link. Requires OAuth
   credentials via the device authorization flow. See `cli/main.go::DoURL`.
@@ -48,12 +48,16 @@ The CLI binary lives in `cli/`. It exposes three operations:
 * **`@ resolve <url>`** — look up the destination of a short link. Does
   *not* require OAuth credentials. See `cli/main.go::DoResolve` and
   `cli/main.go::doResolveWithClient`.
+* **`@ list [--domain <host>]`** — list short URLs and destinations.
+  Requires OAuth credentials. Firestore filters by the authenticated
+  subject; backends without ownership data return every matching link.
+  The domain filter applies to the short URL's host.
 
 The flag sets are split into `apiFlagSet` (just `cfg.APIEndpoint`) and
 `authFlagSet` (the OAuth-related flags). The root command uses both
-(composed into `urlFlagSet`), `login` uses only `authFlagSet`, and `resolve`
-uses only `apiFlagSet`. Adding a new subcommand that needs a different set
-of configuration is a matter of attaching the right flag set to the new
+(composed into `urlFlagSet`), `login` uses only `authFlagSet`, `resolve`
+uses only `apiFlagSet`, and `list` uses both. Adding a new subcommand with a
+different set of configuration means attaching the right flag set to the new
 Cobra command.
 
 Explicit login is transactional from the CLI's perspective. `auth.Login`
@@ -84,6 +88,17 @@ method. The destination of a short link is functionally public information
 it to anonymous users — so the gRPC `Get` RPC aligns with that reality by
 being public. This is what allows the `resolve` subcommand to work
 without OAuth.
+
+`List` requires the dedicated `ManageURLs.List` scope even when the
+selected storage backend has no ownership model. Firestore takes the caller's
+identity from the validated JWT and returns only their records. The API never
+accepts an owner ID as a filter.
+
+Firestore stores root links at `links/<domain>` and path links under
+`links/<domain>/id`. The all-domain owner lookup needs the collection-group
+index defined in `deploy/prod/tf/firestore.tf`; apply it before deploying the
+new API. Listing currently returns all matches in one response, so pagination
+will be needed as accounts grow.
 
 When adding a new RPC, ask: is the response of this RPC already disclosed
 to anonymous users by another path (e.g., the HTTP redirect handler, a
@@ -116,9 +131,9 @@ the server starts listening. The OTel SDK is configured via the existing
 ### What gets emitted
 
 * **Span names** are business-operation names defined in `AGENTS.md`:
-  `create_link`, `resolve_link`, `redirect`, `reject_request`,
-  `storage.lookup`, `storage.write`. These are emitted via the OTel
-  auto-instrumentation libraries (`otelhttp`, `otelgrpc`) with span-name
+  `create_link`, `resolve_link`, `list_links`, `redirect`, `reject_request`,
+  `storage.lookup`, `storage.write`, `storage.list`. These are emitted via
+  the OTel auto-instrumentation libraries (`otelhttp`, `otelgrpc`) with span-name
   formatters that rename the default method/path names. HTTP server spans
   include the matched `http.route`; rejected methods are renamed to
   `reject_request` rather than being reported as redirects.

@@ -30,6 +30,20 @@ message NewRequest {
     string send_to = 2;
 }
 
+// ListRequest optionally restricts links to a source domain.
+message ListRequest {
+    string domain = 1;
+}
+
+message Link {
+    string from = 1;
+    string to = 2;
+}
+
+message ListResponse {
+    repeated Link links = 1;
+}
+
 // TODO: Authentication should be an emergent property of these definitions.
 // Come back to when looking at ReBAC
 //
@@ -48,5 +62,10 @@ service ManageURLs {
     // Post generates a new URL with a generated suffix.
     rpc New(NewRequest) returns (Response) {
         option (x40.dev.auth.oauth2_scope) = "api.x40.link/scopes/x40.dev.url.ManageURLs.New";
+    }
+
+    // List returns links visible to the caller, optionally within one domain.
+    rpc List(ListRequest) returns (ListResponse) {
+        option (x40.dev.auth.oauth2_scope) = "api.x40.link/scopes/x40.dev.url.ManageURLs.List";
     }
 }
