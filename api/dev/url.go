@@ -114,15 +114,9 @@ func (u URL) List(ctx context.Context, req *dev.ListRequest) (*dev.ListResponse,
 		}
 	}
 
-	lister, ok := u.Storer.(storage.Lister)
-	if !ok {
-		return nil, status.Error(codes.Unimplemented, "storage does not support listing")
-	}
-	links, err := lister.List(ctx, req.Domain)
+	links, err := u.Storer.List(ctx, req.Domain)
 	if errors.Is(err, storage.ErrUnauthorized) {
 		return nil, status.Error(codes.PermissionDenied, "cannot list links")
-	} else if errors.Is(err, storage.ErrListUnsupported) {
-		return nil, status.Error(codes.Unimplemented, "storage does not support listing")
 	} else if err != nil {
 		log.Println(err)
 		return nil, status.Error(codes.Internal, "failed to list links")

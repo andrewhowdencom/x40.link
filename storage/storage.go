@@ -14,7 +14,6 @@ var (
 	ErrFailed             = errors.New("storage implementation failed")
 	ErrCorrupt            = errors.New("the data returned by the storage is invalid")
 	ErrUnauthorized       = errors.New("you are not the owner of this record")
-	ErrListUnsupported    = errors.New("storage does not support listing")
 )
 
 // CtxKey is a type designed to allow delimiting key/value pairs
@@ -40,13 +39,6 @@ type Link struct {
 	To   *url.URL
 }
 
-// Lister is implemented by storage backends that can enumerate links.
-// Backends with ownership data filter by the agent in ctx; other backends
-// return all matching links.
-type Lister interface {
-	List(ctx context.Context, domain string) ([]Link, error)
-}
-
 // Storer is the interface that retrieves links supplied to it. Methods are named after the RESTful HTTP
 // verbs, as the meanings are semantically similar.
 type Storer interface {
@@ -55,4 +47,9 @@ type Storer interface {
 
 	// Store a map between a shortlink and the destination.
 	Put(ctx context.Context, from *url.URL, to *url.URL) error
+
+	// List returns links from the given source domain, or all domains when
+	// domain is empty. Backends with ownership data filter by the caller in
+	// ctx; backends without it return all matching links.
+	List(ctx context.Context, domain string) ([]Link, error)
 }

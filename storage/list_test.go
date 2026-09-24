@@ -31,13 +31,11 @@ func TestListUnownedStorage(t *testing.T) {
 				require.NoError(t, store.Put(ctx, from, &url.URL{Host: "target.example"}))
 			}
 
-			lister, ok := store.(storage.Lister)
-			require.True(t, ok)
-			all, err := lister.List(ctx, "")
+			all, err := store.List(ctx, "")
 			require.NoError(t, err)
 			require.Equal(t, []string{"//a.example/one", "//a.example/three", "//b.example/two"}, sources(all))
 
-			filtered, err := lister.List(ctx, "a.example")
+			filtered, err := store.List(ctx, "a.example")
 			require.NoError(t, err)
 			require.Equal(t, []string{"//a.example/one", "//a.example/three"}, sources(filtered))
 		})

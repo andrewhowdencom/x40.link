@@ -79,9 +79,5 @@ func (y *yaml) Put(context.Context, *url.URL, *url.URL) error {
 }
 
 func (y *yaml) List(ctx context.Context, domain string) ([]storage.Link, error) {
-	lister, ok := y.str.(storage.Lister)
-	if !ok {
-		return nil, storage.ErrListUnsupported
-	}
-	return lister.List(ctx, domain)
+	return y.str.List(ctx, domain)
 }

@@ -199,8 +199,6 @@ func TestOwnership(t *testing.T) {
 func TestFirestoreList(t *testing.T) {
 	store := externalSinkFactories["firestore"]("list")
 	defer externalSinkTeardown["firestore"]("list")
-	lister, ok := store.(storage.Lister)
-	assert.True(t, ok)
 
 	owner := context.WithValue(context.Background(), storage.CtxKeyAgent, "sub:owner")
 	other := context.WithValue(context.Background(), storage.CtxKeyAgent, "sub:other")
@@ -219,14 +217,14 @@ func TestFirestoreList(t *testing.T) {
 		assert.NoError(t, store.Put(item.ctx, from, &url.URL{Host: "target.example"}))
 	}
 
-	all, err := lister.List(owner, "")
+	all, err := store.List(owner, "")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"//a.example", "//a.example/one", "//a.example/plus+sign", "//b.example/two"}, sources(all))
 
-	filtered, err := lister.List(owner, "a.example")
+	filtered, err := store.List(owner, "a.example")
 	assert.NoError(t, err)
 	assert.Equal(t, []string{"//a.example", "//a.example/one", "//a.example/plus+sign"}, sources(filtered))
 
-	_, err = lister.List(context.Background(), "")
+	_, err = store.List(context.Background(), "")
 	assert.ErrorIs(t, err, storage.ErrUnauthorized)
 }
