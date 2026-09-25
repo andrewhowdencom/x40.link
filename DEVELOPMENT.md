@@ -100,6 +100,13 @@ index defined in `deploy/prod/tf/firestore.tf`; apply it before deploying the
 new API. Listing currently returns all matches in one response, so pagination
 will be needed as accounts grow.
 
+The production Cloud Run request timeout is 60 seconds in
+`deploy/prod/cr/service.yaml`. This allows cold starts and Firestore queries
+to finish before the load balancer closes the connection; the CLI's list
+request has its own 30-second deadline. The CLI formats list output in
+aligned columns, so it is intended for display rather than tab-delimited
+parsing.
+
 When adding a new RPC, ask: is the response of this RPC already disclosed
 to anonymous users by another path (e.g., the HTTP redirect handler, a
 public website, etc.)? If so, declaring it as public — by omitting the

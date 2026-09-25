@@ -4,9 +4,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"strings"
+	"text/tabwriter"
 	"time"
 
 	"github.com/andrewhowdencom/sysexits"
@@ -276,18 +278,26 @@ func DoList(cmd *cobra.Command, _ []string) error {
 	if err != nil {
 		return fmt.Errorf("%w: %s", sysexits.NoHost, err)
 	}
-	ctx, cancel := context.WithTimeout(cmd.Context(), 30*time.Second)
+	return runList(cmd.Context(), client, domain, cmd.OutOrStdout())
+}
+
+func runList(ctx context.Context, client api.Client, domain string, out io.Writer) error {
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	links, err := doListWithClient(ctx, client, domain)
 	if err != nil {
 		return err
 	}
+	writer := tabwriter.NewWriter(out, 0, 8, 2, ' ', 0)
 	for _, link := range links {
 		source, _ := strings.CutPrefix(link.From, "//")
 		destination, _ := strings.CutPrefix(link.To, "//")
-		if _, err := fmt.Fprintf(cmd.OutOrStdout(), "%s\t%s\n", source, destination); err != nil {
+		if _, err := fmt.Fprintf(writer, "%s\t%s\n", source, destination); err != nil {
 			return fmt.Errorf("%w: %s", sysexits.Software, err)
 		}
+	}
+	if err := writer.Flush(); err != nil {
+		return fmt.Errorf("%w: %s", sysexits.Software, err)
 	}
 	return nil
 }
