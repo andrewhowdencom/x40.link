@@ -84,29 +84,14 @@ const resolveTimeout = 10 * time.Second
 var Root = &cobra.Command{
 	Use:   "@",
 	Short: "The client tool for generating URLs",
-	Long: `The client tool for generating URLs.
-
-Generate a random URL on x40.link:
+	Long: `Create a short link:
 
     @ https://my.destination.url/path
-
-Generate a random path on a specific domain registered on x40.link:
-
     @ source.domain https://my.destination.url/path
-
-Generate a URL on a specific domain, registered on x40.link:
-
     @ https://source.domain/path https://my.destination.url/path
 
-Or, look up the destination of an existing short link:
-
-    @ resolve https://source.domain/path
-
-Replace the cached login with a different account:
-
-    @ login
-
-	`,
+Omit the source to use x40.link; omit its path to generate one.
+Custom source domains must be registered on x40.link.`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: DoURL,
 }
