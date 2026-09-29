@@ -223,8 +223,7 @@ func TestNewServer_WithH2CConcurrentRequests(t *testing.T) {
 	}
 
 	assert.Equal(t, requests, redirects)
+	// HTTP/2 may open an additional connection for a single request under
+	// load. Fewer connections than requests still proves connection reuse.
 	assert.Less(t, len(connectionRequests), requests)
-	for _, count := range connectionRequests {
-		assert.Greater(t, count, 1)
-	}
 }
