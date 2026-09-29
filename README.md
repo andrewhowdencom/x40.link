@@ -31,11 +31,13 @@ The CLI binary supports four operations.
 
 ```bash
 @ https://my.destination.url/path
+@ source.domain https://my.destination.url/path
 @ https://source.domain/path https://my.destination.url/path
 ```
 
-The first form generates a random short URL on the default domain. The second form lets you supply
-the short URL explicitly. This operation requires OAuth credentials.
+The first form generates a random short URL on the default domain. The second generates a random path
+on a registered domain. The third lets you supply the short URL explicitly. This operation requires
+OAuth credentials.
 
 **Log in with a different account** (`@ login`):
 
