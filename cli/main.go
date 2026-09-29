@@ -90,6 +90,10 @@ Generate a random URL on x40.link:
 
     @ https://my.destination.url/path
 
+Generate a random path on a specific domain registered on x40.link:
+
+    @ source.domain https://my.destination.url/path
+
 Generate a URL on a specific domain, registered on x40.link:
 
     @ https://source.domain/path https://my.destination.url/path
