@@ -3,8 +3,13 @@ package storage_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os/exec"
 	"sync"
@@ -13,9 +18,11 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"github.com/andrewhowdencom/x40.link/server"
 	"github.com/andrewhowdencom/x40.link/storage"
 	storer "github.com/andrewhowdencom/x40.link/storage/firestore"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -179,13 +186,13 @@ func TestOwnership(t *testing.T) {
 				storage.ErrUnauthorized,
 			)
 
-			// Try and update the error as the user
-			assert.Nil(t, str.Put(ownerCtx, &url.URL{Host: "x40"}, &url.URL{Host: "40x"}))
+			// Creation cannot overwrite a link, even for its owner.
+			assert.ErrorIs(t, str.Put(ownerCtx, &url.URL{Host: "x40"}, &url.URL{Host: "40x"}), storage.ErrAlreadyExists)
 
 			// Allow all users to read URLs
 			to, err := str.Get(thiefCtx, &url.URL{Host: "x40"})
 			assert.Nil(t, err)
-			assert.Equal(t, to.String(), (&url.URL{Host: "40x"}).String())
+			assert.Equal(t, to.String(), (&url.URL{Host: "x40"}).String())
 
 			// Do not allow anonymous users to update the record
 			assert.ErrorIs(t,
@@ -219,12 +226,142 @@ func TestFirestoreList(t *testing.T) {
 
 	all, err := store.List(owner, "")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"//a.example", "//a.example/one", "//a.example/plus+sign", "//b.example/two"}, sources(all))
+	assert.Equal(t, []string{"//a.example/", "//a.example/one", "//a.example/plus+sign", "//b.example/two"}, sources(all))
 
 	filtered, err := store.List(owner, "a.example")
 	assert.NoError(t, err)
-	assert.Equal(t, []string{"//a.example", "//a.example/one", "//a.example/plus+sign"}, sources(filtered))
+	assert.Equal(t, []string{"//a.example/", "//a.example/one", "//a.example/plus+sign"}, sources(filtered))
 
 	_, err = store.List(context.Background(), "")
 	assert.ErrorIs(t, err, storage.ErrUnauthorized)
+}
+
+func TestFirestorePathIdentityAndAtomicCreation(t *testing.T) {
+	store := externalSinkFactories["firestore"]("identity")
+	defer externalSinkTeardown["firestore"]("identity")
+	paths := []string{"/foo/bar", "/foo+bar", "/foo%2Fbar", "/foo//bar", "/Foo", "/foo", "/", "/%2F"}
+	for _, reverse := range []bool{false, true} {
+		for _, differentOwners := range []bool{false, true} {
+			domain := fmt.Sprintf("identity-%t-%t.example", reverse, differentOwners)
+			srv, err := server.New(server.WithStorage(store, "firestore"))
+			require.NoError(t, err)
+			for index := range paths {
+				i := index
+				if reverse {
+					i = len(paths) - 1 - index
+				}
+				owner := "owner"
+				if differentOwners {
+					owner = fmt.Sprintf("owner-%d", i)
+				}
+				ctx := context.WithValue(context.Background(), storage.CtxKeyAgent, owner)
+				from, err := url.Parse("https://" + domain + paths[i])
+				require.NoError(t, err)
+				to, err := url.Parse(fmt.Sprintf("https://destination.example/%d", i))
+				require.NoError(t, err)
+				require.NoError(t, store.Put(ctx, from, to))
+			}
+			for i, p := range paths {
+				from, err := url.Parse("https://" + domain + p)
+				require.NoError(t, err)
+				want := fmt.Sprintf("https://destination.example/%d", i)
+				to, err := store.Get(context.Background(), from)
+				require.NoError(t, err)
+				require.Equal(t, want, to.String())
+				recorder := httptest.NewRecorder()
+				srv.Handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, from.String(), nil))
+				require.Equal(t, http.StatusTemporaryRedirect, recorder.Code)
+				require.Equal(t, want, recorder.Header().Get("Location"))
+			}
+		}
+	}
+	from := &url.URL{Host: "concurrent.example", Path: "/same"}
+	const creators = 16
+	type result struct {
+		destination string
+		err         error
+	}
+	results := make(chan result, creators)
+	start := make(chan struct{})
+	for i := range creators {
+		go func(i int) {
+			<-start
+			to := &url.URL{Scheme: "https", Host: "destination.example", Path: fmt.Sprintf("/%d", i)}
+			ctx := context.WithValue(context.Background(), storage.CtxKeyAgent, "same-owner")
+			results <- result{to.String(), store.Put(ctx, from, to)}
+		}(i)
+	}
+	close(start)
+	var winner string
+	successes := 0
+	for range creators {
+		r := <-results
+		if r.err == nil {
+			winner = r.destination
+			successes++
+		} else {
+			require.ErrorIs(t, r.err, storage.ErrAlreadyExists)
+		}
+	}
+	require.Equal(t, 1, successes)
+	to, err := store.Get(context.Background(), from)
+	require.NoError(t, err)
+	require.Equal(t, winner, to.String())
+}
+
+func TestFirestoreOfflineMigration(t *testing.T) {
+	store := externalSinkFactories["firestore"]("migration").(*storer.Firestore)
+	defer externalSinkTeardown["firestore"]("migration")
+	ctx := context.Background()
+	originals := map[string]map[string]interface{}{
+		"links/example.com":                  {},
+		"links/root.example":                 {"to": "https://root.example", "owner": "owner"},
+		"links/example.com/id/+foo+bar":      {"to": "https://slash.example", "owner": "owner"},
+		"links/example.com/id/foo+bar":       {"to": "https://slash.example", "owner": "owner"},
+		"links/example.com/id/+literal+plus": {"to": "https://plus.example", "owner": "owner", "from": "//example.com/literal+plus"},
+		"links/example.com/id/+empty":        {"to": "", "owner": ""},
+	}
+	for path, data := range originals {
+		_, err := store.Client.Doc(path).Set(ctx, data)
+		require.NoError(t, err)
+	}
+	plan, err := store.PlanMigration(ctx)
+	require.NoError(t, err)
+	require.Len(t, plan.Entries, 4)
+	require.Equal(t, 1, plan.IdenticalDuplicates)
+	// Exercise the exact JSON backup round trip used by the migration command.
+	backup, err := json.Marshal(plan)
+	require.NoError(t, err)
+	var restored storer.MigrationPlan
+	require.NoError(t, json.Unmarshal(backup, &restored))
+	require.NoError(t, store.ApplyMigration(ctx, plan))
+	_, err = store.Client.Doc(plan.Entries[0].Target).Set(ctx, map[string]interface{}{"to": "changed", "owner": "owner"})
+	require.NoError(t, err)
+	require.Error(t, store.RollbackMigration(ctx, &restored))
+	_, err = store.Client.Doc(plan.Entries[0].Target).Set(ctx, plan.Entries[0].Data)
+	require.NoError(t, err)
+	for source, want := range map[string]string{"//example.com/foo/bar": "https://slash.example", "//example.com/literal+plus": "https://plus.example", "//root.example/": "https://root.example"} {
+		from, err := url.Parse(source)
+		require.NoError(t, err)
+		to, err := store.Get(ctx, from)
+		require.NoError(t, err)
+		require.Equal(t, want, to.String())
+	}
+	next, err := store.PlanMigration(ctx)
+	require.NoError(t, err)
+	require.Empty(t, next.Entries)
+	require.NoError(t, store.RollbackMigration(ctx, &restored))
+	require.NoError(t, store.RollbackMigration(ctx, &restored))
+	for path, data := range originals {
+		snap, err := store.Client.Doc(path).Get(ctx)
+		require.NoError(t, err)
+		require.Equal(t, data, snap.Data())
+	}
+	stale, err := store.PlanMigration(ctx)
+	require.NoError(t, err)
+	_, err = store.Client.Doc(stale.Entries[0].Source.Path).Set(ctx, map[string]interface{}{"to": "changed", "owner": "owner"})
+	require.NoError(t, err)
+	require.Error(t, store.ApplyMigration(ctx, stale))
+	_, err = store.Get(ctx, &url.URL{Host: "example.com", Path: "/empty"})
+	require.True(t, errors.Is(err, storage.ErrNotFound))
 }

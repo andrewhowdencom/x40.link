@@ -12,6 +12,8 @@ import "dev/auth.proto";
 // The definition expects any fields that are missing to be generated on the server side.
 message RedirectOn {
     string host = 1;
+    // An escaped absolute source path. Reserved escapes such as %2F are
+    // distinct from literal slashes. Empty requests a generated suffix.
     string path = 2;
 }
 
@@ -59,7 +61,9 @@ service ManageURLs {
     rpc Get(GetRequest) returns (Response) {
     }
 
-    // Post generates a new URL with a generated suffix.
+    // New creates a link, generating a suffix when the path is omitted.
+    // Firestore creation never overwrites an existing address: duplicates
+    // return ALREADY_EXISTS to the owner and PERMISSION_DENIED otherwise.
     rpc New(NewRequest) returns (Response) {
         option (x40.dev.auth.oauth2_scope) = "api.x40.link/scopes/x40.dev.url.ManageURLs.New";
     }

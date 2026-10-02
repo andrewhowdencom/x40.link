@@ -94,11 +94,31 @@ selected storage backend has no ownership model. Firestore takes the caller's
 identity from the validated JWT and returns only their records. The API never
 accepts an owner ID as a filter.
 
-Firestore stores root links at `links/<domain>` and path links under
-`links/<domain>/id`. The all-domain owner lookup needs the collection-group
-index defined in `deploy/prod/tf/firestore.tf`; apply it before deploying the
-new API. Listing currently returns all matches in one response, so pagination
-will be needed as accounts grow.
+Firestore stores all links, including `/`, at
+`links/<domain>/shortLinks/p-<encoded_path>`. The path component is lowercase
+RFC 4648 Base32 without padding, encoding the escaped source path. Hosts are
+lowercase, percent-escape hex digits are uppercase, and empty storage paths
+resolve to `/`. Path case, plus signs, repeated slashes, and escaped reserved
+characters remain distinct. Scheme and query do not select a different link.
+The `p-` prefix makes the encoded component a resource ID; Firestore's
+1,500-byte document ID limit allows at most 936 bytes of escaped path.
+
+Firestore `Put` now claims an address atomically and never overwrites it.
+An existing address returns `ErrAlreadyExists` to its owner and
+`ErrUnauthorized` to another caller. `ManageURLs.New` maps these to
+`ALREADY_EXISTS` and `PERMISSION_DENIED`. `RedirectOn.path` is an escaped
+absolute path; an omitted path still requests a generated suffix.
+
+The all-domain owner lookup needs the `shortLinks` collection-group index
+defined in `deploy/prod/tf/firestore.tf`. Apply that index and migrate old
+records before sending traffic to this version; there is no legacy read
+fallback. See [Migrate Firestore path keys](docs/content/how-to/migrate-firestore-path-keys.md).
+The legacy `id` index is retained for rollback. Listing currently returns
+all matches in one response, so pagination will be needed as accounts grow.
+
+Firestore operations annotate the existing request span with
+`x40.storage.key_version=base32-v1` and `db.system=firestore` so the new
+storage path can be identified in production traces.
 
 The production Cloud Run request timeout is 60 seconds in
 `deploy/prod/cr/service.yaml`. This allows cold starts and Firestore queries

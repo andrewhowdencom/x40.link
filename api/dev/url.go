@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"net/url"
+	"strings"
 
 	"github.com/andrewhowdencom/x40.link/api/gen/dev"
 	"github.com/andrewhowdencom/x40.link/storage"
@@ -61,6 +62,8 @@ func (u URL) Get(ctx context.Context, req *dev.GetRequest) (*dev.Response, error
 		return nil, status.Error(codes.PermissionDenied, "you are not the owner of this record")
 	} else if errors.Is(err, storage.ErrNotFound) {
 		return nil, status.Error(codes.NotFound, "url not found")
+	} else if errors.Is(err, storage.ErrInvalidSource) {
+		return nil, status.Error(codes.InvalidArgument, "invalid source address")
 	} else if err != nil {
 
 		log.Println(err)
@@ -82,7 +85,13 @@ func (u URL) New(ctx context.Context, req *dev.NewRequest) (*dev.Response, error
 	from := &url.URL{}
 	if req.On != nil {
 		from.Host = req.On.Host
-		from.Path = req.On.Path
+		if req.On.Path != "" {
+			p, parseErr := url.ParseRequestURI(req.On.Path)
+			if parseErr != nil || p.Host != "" || p.RawQuery != "" || p.ForceQuery || strings.Contains(req.On.Path, "#") || !strings.HasPrefix(req.On.Path, "/") {
+				return nil, status.Error(codes.InvalidArgument, "source path must be an escaped absolute path without a query")
+			}
+			from.Path, from.RawPath = p.Path, p.RawPath
+		}
 	}
 
 	// Add information if it is not there.
@@ -95,6 +104,10 @@ func (u URL) New(ctx context.Context, req *dev.NewRequest) (*dev.Response, error
 
 	if errors.Is(err, storage.ErrUnauthorized) {
 		return nil, status.Error(codes.PermissionDenied, "you are not the owner of this record")
+	} else if errors.Is(err, storage.ErrAlreadyExists) {
+		return nil, status.Error(codes.AlreadyExists, "source address already exists")
+	} else if errors.Is(err, storage.ErrInvalidSource) {
+		return nil, status.Error(codes.InvalidArgument, "invalid source address")
 	} else if err != nil {
 		log.Println(err)
 		return nil, status.Errorf(codes.Internal, "failed to write to storage")
