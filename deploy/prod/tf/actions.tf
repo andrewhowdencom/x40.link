@@ -7,7 +7,7 @@
 # * https://github.com/google-github-actions/auth
 resource "google_service_account" "x40-link__github-actions" {
   account_id   = "github-actions-at-x40-link"
-  display_name = "GitHub Actions @ andrewhowdencom/x40.link"
+  display_name = "GitHub Actions @ x40-link/x40.link"
 }
 
 resource "google_project_iam_member" "x40-link__github-actions__artifact-registry" {
@@ -46,7 +46,7 @@ resource "google_iam_workload_identity_pool_provider" "github" {
 resource "google_service_account_iam_member" "x40-link__github-actions" {
   service_account_id = google_service_account.x40-link__github-actions.name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github__production.name}/attribute.repository/andrewhowdencom/x40.link"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github__production.name}/attribute.repository/x40-link/x40.link"
 }
 
 # Allow the deploy workflow to attach the runtime identity to Cloud Run.

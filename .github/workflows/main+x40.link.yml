@@ -46,6 +46,7 @@ jobs:
               - 'go.mod'
               - 'go.sum'
               - 'Containerfile'
+              - 'Taskfile.yml'
               - '.github/workflows/main+x40.link.yml'
               - 'deploy/prod/cr/**'
               - 'etc/**'
