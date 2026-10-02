@@ -36,6 +36,19 @@ commit hash. Validation checks the checksums, archive contents and target
 metadata, runs the host binary's help commands, and runs the CLI unit tests.
 Run it on one of the supported host platforms with the tools listed above.
 
+## Server Deployments
+
+The main server workflow authenticates to Google Cloud through Workload
+Identity Federation. Its service account trusts the repository attribute
+`x40-link/x40.link`; the binding is managed in `deploy/prod/tf/actions.tf`.
+After a repository transfer or rename, update and apply this binding before
+rerunning deployments. A stale repository attribute causes the authentication
+step to fail with `iam.serviceAccounts.getAccessToken` permission denied.
+
+`task container/all` publishes to Google Artifact Registry and
+`ghcr.io/x40-link/x40.link`. The GitHub registry namespace must match the
+repository owner so the workflow's `GITHUB_TOKEN` can publish the image.
+
 ## CLI Subcommands
 
 The CLI binary lives in `cli/`. It exposes four operations:
