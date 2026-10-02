@@ -290,6 +290,28 @@ func TestNew(t *testing.T) {
 			code: codes.Internal,
 		},
 		{
+			name: "duplicate creation",
+			str:  test.New(test.WithError(storage.ErrAlreadyExists)),
+			en:   func(_, _ *url.URL) error { return nil },
+			req:  &gendev.NewRequest{On: &gendev.RedirectOn{Host: "example.local", Path: "/foo"}, SendTo: "https://example.local/2"},
+			code: codes.AlreadyExists,
+		},
+		{
+			name: "escaped reserved source path",
+			str:  test.New(),
+			en:   func(_, _ *url.URL) error { return nil },
+			req:  &gendev.NewRequest{On: &gendev.RedirectOn{Host: "example.local", Path: "/foo%2Fbar"}, SendTo: "https://example.local/2"},
+			resp: &gendev.Response{Url: "//example.local/foo%2Fbar"},
+			code: codes.OK,
+		},
+		{
+			name: "source path query rejected",
+			str:  test.New(),
+			en:   func(_, _ *url.URL) error { return nil },
+			req:  &gendev.NewRequest{On: &gendev.RedirectOn{Host: "example.local", Path: "/foo?a=1"}, SendTo: "https://example.local/2"},
+			code: codes.InvalidArgument,
+		},
+		{
 			name: "no polyfilling required",
 			str:  test.New(),
 			en:   func(_, _ *url.URL) error { return nil },

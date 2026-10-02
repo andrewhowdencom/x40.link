@@ -33,3 +33,6 @@ docs/site
 
 # Ignore generated credentials from google-github-actions/auth
 gha-creds-*.json
+
+# Private offline Firestore migration backups
+.migration-backups/

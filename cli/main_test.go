@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,6 +23,15 @@ import (
 type fakeClient struct {
 	get  func(ctx context.Context, in *gendev.GetRequest, opts ...grpc.CallOption) (*gendev.Response, error)
 	list func(ctx context.Context, in *gendev.ListRequest, opts ...grpc.CallOption) (*gendev.ListResponse, error)
+}
+
+func TestBuildNewRequestPreservesPathIdentity(t *testing.T) {
+	for _, source := range []string{"example.com/foo/bar", "example.com/foo+bar", "example.com/foo%2Fbar", "example.com/foo//bar", "example.com/", "example.com"} {
+		req, err := buildNewRequest([]string{source, "destination.example"})
+		assert.NoError(t, err)
+		assert.Equal(t, strings.TrimPrefix(source, "example.com"), req.On.Path)
+		assert.Equal(t, "https://destination.example", req.SendTo)
+	}
 }
 
 func (f *fakeClient) Get(ctx context.Context, in *gendev.GetRequest, opts ...grpc.CallOption) (*gendev.Response, error) {

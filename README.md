@@ -39,6 +39,13 @@ The first form generates a random short URL on the default domain. The second ge
 on a registered domain. The third lets you supply the short URL explicitly. This operation requires
 OAuth credentials.
 
+On Firestore, creation claims an address atomically. Creating an existing
+address returns an error and preserves its destination. Escaped source paths
+are preserved: `/foo/bar`, `/foo+bar`, and `/foo%2Fbar` are distinct links.
+Existing Firestore installations must follow the
+[path-key migration guide](docs/content/how-to/migrate-firestore-path-keys.md)
+before deploying this version.
+
 **Log in with a different account** (`@ login`):
 
 ```bash

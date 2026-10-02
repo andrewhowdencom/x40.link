@@ -154,30 +154,9 @@ Examples:
 
 // DoURL is the root command for the client, and generates URLs
 func DoURL(_ *cobra.Command, args []string) error {
-
-	req := &dev.NewRequest{}
-
-	// Stub the scheme there. Only HTTPS is supported.
-	for idx := range args {
-		if !strings.Contains(args[idx], "://") {
-			args[idx] = "https://" + args[idx]
-		}
-	}
-
-	switch len(args) {
-	case 1:
-		req.SendTo = args[0]
-	case 2:
-		req.SendTo = args[1]
-		u, err := url.Parse(args[0])
-		if err != nil {
-			return err
-		}
-
-		req.On = &dev.RedirectOn{
-			Host: u.Host,
-			Path: u.Path,
-		}
+	req, err := buildNewRequest(args)
+	if err != nil {
+		return err
 	}
 
 	ts, err := auth.TokenSource()
@@ -206,6 +185,25 @@ func DoURL(_ *cobra.Command, args []string) error {
 	fmt.Println(url)
 
 	return nil
+}
+
+func buildNewRequest(args []string) (*dev.NewRequest, error) {
+	normalized := make([]string, len(args))
+	for i, arg := range args {
+		if !strings.Contains(arg, "://") {
+			arg = "https://" + arg
+		}
+		normalized[i] = arg
+	}
+	req := &dev.NewRequest{SendTo: normalized[len(normalized)-1]}
+	if len(normalized) == 2 {
+		u, err := url.Parse(normalized[0])
+		if err != nil {
+			return nil, err
+		}
+		req.On = &dev.RedirectOn{Host: u.Host, Path: u.EscapedPath()}
+	}
+	return req, nil
 }
 
 // DoLogin is the cobra command handler for the "login" subcommand.

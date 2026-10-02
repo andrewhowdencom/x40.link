@@ -28,8 +28,9 @@ type strHandler struct {
 // otelhttp boundary.
 func (o *strHandler) Redirect(w http.ResponseWriter, r *http.Request) {
 	lookup := &url.URL{
-		Host: r.Host,
-		Path: r.URL.Path,
+		Host:    r.Host,
+		Path:    r.URL.Path,
+		RawPath: r.URL.RawPath,
 	}
 
 	red, err := o.str.Get(r.Context(), lookup)
